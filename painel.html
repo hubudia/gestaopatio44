@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestão Expedição - LMG44</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: #0f172a; color: #cbd5e1; font-family: 'Consolas', 'Courier New', monospace; height: 100vh; display: flex; overflow: hidden; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 4px; }
+
+        .sidebar { width: 260px; background: #0b132b; border-right: 1px solid #1e293b; display: flex; flex-direction: column; box-shadow: 2px 0 15px rgba(0,0,0,0.5); z-index: 10; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+        .sidebar.collapsed { width: 80px; }
+        .main-panel { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; background: radial-gradient(circle at top right, #0d1424 0%, #07090f 100%); transition: margin-left 0.4s ease; }
+
+        .brand { padding: 20px 15px; border-bottom: 1px solid #1e293b; display: flex; flex-direction: column; align-items: center; background: #080f26; }
+        .brand-text { display: flex; flex-direction: column; align-items: center; transition: opacity 0.2s; width: 100%;}
+        .sidebar.collapsed .brand-text { opacity: 0; pointer-events: none; display: none; }
+        .brand h1 { margin: 0; font-size: 18px; letter-spacing: 2px; color: #f8fafc; font-family: 'Segoe UI', sans-serif;}
+        .brand p { margin: 5px 0 0 0; font-size: 12px; color: #94a3b8; }
+        .status-led { display: inline-block; width: 10px; height: 10px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); margin-right: 5px; }
+
+        .btn-sair-mini { background: rgba(239, 68, 68, 0.05); color: #ef4444; border: 1px solid #ef4444; border-radius: 6px; padding: 10px 15px; font-size: 12px; font-family: 'Segoe UI', sans-serif; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; margin-top: 20px; box-sizing: border-box; transition: all 0.3s ease; box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); letter-spacing: 1px; }
+        .btn-sair-mini:hover { background: #ef4444; color: #fff; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
+        .sidebar.collapsed .btn-sair-mini { padding: 10px 0; width: 40px; margin-top: 10px; }
+        .sidebar.collapsed .btn-sair-mini .nav-text { display: none; }
+
+        .nav-menu { padding: 10px 0; flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; overflow-y: auto;}
+        .nav-btn { display: none; width: 100%; padding: 16px 20px; background: transparent; color: #94a3b8; border: none; text-align: left; font-family: 'Segoe UI', sans-serif; font-size: 14px; cursor: pointer; text-transform: uppercase; border-left: 3px solid transparent; transition: 0.2s; font-weight: 600; align-items: center; white-space: nowrap;}
+        .nav-icon { font-size: 20px; min-width: 35px; text-align: center; margin-right: 10px; }
+        .sidebar.collapsed .nav-text { display: none; }
+        .sidebar.collapsed .nav-btn { justify-content: center; padding: 16px 0; border-left: 4px solid transparent; }
+        .sidebar.collapsed .nav-icon { margin-right: 0; }
+        .nav-btn:hover { background: rgba(56, 189, 248, 0.05); color: #f8fafc; }
+        .nav-btn.active { background: rgba(56, 189, 248, 0.1); color: #38bdf8; border-left: 3px solid #38bdf8; }
+        #btnTabFinalFila.active { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-left: 3px solid #ef4444; }
+        .toggle-btn-bottom { width: 100%; background: #080f26; border: none; border-top: 1px solid #1e293b; color: #38bdf8; font-size: 24px; cursor: pointer; transition: 0.3s; padding: 15px 0; display: flex; justify-content: center; align-items: center; margin-top: auto; }
+
+        .tab-content-area { flex-grow: 1; padding: 25px; position: relative; overflow: hidden; background: transparent; display: flex; flex-direction: column; }
+        .aba { display: none; height: 100%; flex-direction: column; animation: fadeIn 0.3s ease-in-out; }
+        .aba.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { margin-top: 0; color: #f8fafc; font-weight: 600; font-size: 22px; font-family: 'Segoe UI', sans-serif;}
+        h3 { color: #38bdf8; font-size: 15px; margin-bottom: 15px; border-bottom: 1px solid #1e293b; padding-bottom: 10px; font-family: 'Segoe UI', sans-serif; margin-top: 0; font-weight: 600;}
+        input[type="text"], input[type="file"], textarea { width: 100%; padding: 15px; font-size: 18px; background: #1e293b; border: 1px solid #334155; color: #f8fafc; font-family: inherit; box-sizing: border-box; outline: none; transition: 0.3s; border-radius: 6px;}
+        input[type="text"]:focus, textarea:focus { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
+        input:disabled { background: #0b101a; color: #64748b; border-color: #ef4444; cursor: not-allowed; }
+
+        #coletor { font-size: 28px !important; font-weight: bold; padding: 25px !important; border: 4px solid #10b981 !important; box-shadow: 0 0 30px rgba(16, 185, 129, 0.6), inset 0 0 15px rgba(16, 185, 129, 0.2) !important; background: rgba(16, 185, 129, 0.1) !important; color: #10b981 !important; text-shadow: 0 0 10px rgba(16, 185, 129, 0.5); text-align: center; transition: all 0.3s ease; animation: pulsaVerde 2s infinite alternate; }
+        @keyframes pulsaVerde { 0% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), inset 0 0 10px rgba(16, 185, 129, 0.1); } 100% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.8), inset 0 0 20px rgba(16, 185, 129, 0.3); } }
+        #coletor:focus { box-shadow: 0 0 50px rgba(16, 185, 129, 1), inset 0 0 25px rgba(16, 185, 129, 0.5) !important; background: rgba(16, 185, 129, 0.15) !important; outline: none; animation: none; }
+        #coletor:disabled { border: 5px solid #ff0000 !important; box-shadow: 0 0 50px rgba(255, 0, 0, 1), inset 0 0 30px rgba(255, 0, 0, 0.4) !important; background: rgba(255, 0, 0, 0.15) !important; color: #ff0000 !important; text-shadow: 0 0 15px rgba(255, 0, 0, 0.8) !important; cursor: wait !important; animation: pulsaVermelho 0.4s infinite alternate; }
+        @keyframes pulsaVermelho { 0% { box-shadow: 0 0 30px rgba(255, 0, 0, 0.6), inset 0 0 15px rgba(255, 0, 0, 0.2); } 100% { box-shadow: 0 0 60px rgba(255, 0, 0, 1), inset 0 0 30px rgba(255, 0, 0, 0.5); } }
+        #coletor::placeholder { color: rgba(16, 185, 129, 0.7); font-weight: bold; }
+        #coletor:focus::placeholder { color: transparent; }
+        #coletor:disabled::placeholder { color: #ff0000; opacity: 1; text-shadow: 0 0 10px rgba(255, 0, 0, 0.8); }
+
+        .table-wrapper { flex-grow: 1; overflow-y: auto; border: 1px solid #1e293b; background: rgba(0,0,0,0.3); border-radius: 8px; min-height: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.2);}
+        table { width: 100%; border-collapse: collapse; color: #cbd5e1; font-size: 14px; font-family: 'Segoe UI', sans-serif;}
+        th { position: sticky; top: 0; background: #0f172a; padding: 14px; text-align: left; border-bottom: 1px solid #334155; color: #94a3b8; z-index: 2; font-weight: 600; font-size: 13px; text-transform: uppercase;}
+        td { padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+
+        .mesas-grid { display: grid; grid-template-columns: 1.5fr 1fr; grid-template-rows: 1fr 320px; gap: 20px; flex-grow: 1; min-height: 0; margin-top: 10px; }
+        .card-radar { grid-column: 1 / 2; grid-row: 1 / 3; display: flex; flex-direction: column; min-height: 0; }
+        .card-decor { grid-column: 2 / 3; grid-row: 1 / 2; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #1e293b; border-radius: 8px; color: #cbd5e1; text-align: center; padding: 20px; min-height: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .card-analise { grid-column: 2 / 3; grid-row: 2 / 3; display: flex; flex-direction: column; background: transparent; min-height: 0; }
+
+        .is-mesa-operacao #tabelaAguardandoMesa .rota-text { font-size: 24px !important; color: #fff !important; font-weight: bold; }
+        .is-mesa-operacao #tabelaAguardandoMesa .nome-text { font-size: 16px !important; color: #cbd5e1 !important; }
+        .is-mesa-operacao #tabelaAguardandoMesa .tempo-text { font-size: 20px !important; color: #f59e0b !important; }
+
+        #tabelaAguardandoMesa tr { transition: background 0.2s ease; }
+        #tabelaAguardandoMesa td { border-bottom: 1px solid rgba(56, 189, 248, 0.25); }
+        #tabelaAguardandoMesa tr:hover { background: rgba(56, 189, 248, 0.08); }
+
+        .ff-box { width: 100%; margin-top: 15px; padding: 12px; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; background: rgba(239, 68, 68, 0.05); }
+        .ff-box label { font-size: 11px; color: #ef4444; font-weight: bold; letter-spacing: 1px; display: block; margin-bottom: 8px; }
+        #inputFinalFila, #inputLetrasLiberadas { width: 100%; padding: 12px; background: #0b132b; border: 1px solid #ef4444; border-radius: 4px; color: #fff; font-size: 18px; font-weight: bold; text-align: center; text-transform: uppercase; box-sizing: border-box; }
+        #inputFinalFila:focus, #inputLetrasLiberadas:focus { border-color: #ff0000; box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+
+        .console-box { background: #020617; border: 1px solid #1e293b; padding: 20px; height: 280px; overflow-y: auto; margin-top: 15px; font-size: 16px; color: #94a3b8; border-radius: 8px; font-family: 'Segoe UI', sans-serif;}
+        .log-linha { margin: 10px 0; border-bottom: 1px dashed #1e293b; padding-bottom: 10px; line-height: 1.5; }
+        .log-ok { color: #10b981; }
+        .log-erro { color: #ef4444; }
+        .log-rota-neon { font-size: 34px; font-weight: 900; color: #00f0ff; text-shadow: 0 0 15px rgba(0, 240, 255, 0.8); margin-left: 10px; vertical-align: middle; letter-spacing: 2px;}
+
+        .tv-layout { display: flex; width: 100%; height: 100%; gap: 20px; }
+        .tv-main { flex: 2.5; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #020617; border-radius: 12px; border: 1px solid #1e293b; text-align: center; position: relative; padding: 20px; box-sizing: border-box; overflow: hidden; }
+        .tv-historico { flex: 1; background: #0b101a; border-radius: 12px; border: 1px solid #1e293b; padding: 20px; display: flex; flex-direction: column; overflow: hidden;}
+        .hist-item-tv { border-bottom: 1px solid rgba(239, 68, 68, 0.2); padding: 12px 0; text-align: center; }
+        .hist-item-tv.atend { border-bottom-color: rgba(16, 185, 129, 0.2); }
+        .hist-rota-tv { color: #ef4444; font-size: 26px; font-weight: bold; display: block; margin-bottom: 5px; text-shadow: 0 0 10px rgba(239,68,68,0.3);}
+        .hist-nome-tv { color: #fff; font-size: 11px; text-transform: uppercase; font-family: 'Segoe UI', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        .alerta-tv { font-size: clamp(30px, 4vw, 45px); color: #f59e0b; margin-bottom: 2vh; font-family: 'Segoe UI', sans-serif; font-weight: bold; letter-spacing: 4px; text-transform: uppercase; width: 100%; text-align: center;}
+        @keyframes piscaAlerta { 0% { opacity: 0.5; color: #ef4444;} 100% { opacity: 1; color: #ff0000; text-shadow: 0 0 20px #ef4444; } }
+        .placa-tv { font-size: clamp(60px, 7vw, 130px); font-weight: bold; background: #0f172a; padding: 2vh 5vw; border: 2px solid #38bdf8; border-radius: 15px; margin-bottom: 2vh; color: #f8fafc; font-family: 'Segoe UI', sans-serif; max-width: 95%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;}
+        .nome-mtr { font-size: clamp(25px, 3vw, 45px); color: #94a3b8; margin-bottom: 3vh; text-transform: uppercase; font-family: 'Segoe UI', sans-serif; max-width: 95%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        #displayBancadaContainer { font-family: 'Segoe UI', sans-serif; font-weight:bold; margin-top: 1vh; text-transform: uppercase; display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; max-width: 100%; }
+        #prefixoMesa { color: #cbd5e1; font-size: clamp(35px, 4vw, 55px); margin-right: 15px; }
+        #displayBancada { font-size: clamp(70px, 8vw, 120px); background-image: linear-gradient(to bottom, #10b981, #77ff77); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 8px rgba(16, 185, 129, 0.5); line-height: 1;}
+
+        .btn-padrao { background: transparent; color: #38bdf8; border: 1px solid #38bdf8; padding: 8px 16px; cursor: pointer; font-weight: 600; border-radius: 4px; transition: 0.2s; text-transform: uppercase; font-family: 'Segoe UI', sans-serif;}
+        .btn-padrao:hover { background: #38bdf8; color: #0f172a; }
+        .btn-critico { border-color: #ef4444; color: #ef4444; }
+        .btn-acao { border-color: #10b981; color: #10b981; }
+        .btn-acao:hover { background: #10b981; color: #fff; }
+        .tag-noshow { color:#f59e0b; font-weight:bold; }
+        .tag-atraso { color:#ef4444; font-weight:bold; }
+        .cards-grid-admin { display:grid; grid-template-columns: 1fr 1fr; gap:20px; }
+        .card-admin { background:#1e293b; border-radius:8px; padding:25px; }
+        .mini-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+        .status-chip { display:inline-block; padding:4px 8px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:0.4px; }
+        .chip-presente { background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.4);}
+        .chip-ausente { background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.4);}
+        .chip-chamado { background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.4);}
+        .chip-retido { background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.4);}
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-text">
+                <h1>GESTÃO EXPEDIÇÃO - LMG44</h1>
+                <p><span class="status-led"></span><span id="txtServidor">CONECTANDO...</span></p>
+                <p style="color:#38bdf8; font-weight:900; margin-top:15px; font-size: 16px; letter-spacing: 1px; text-shadow: 0 0 10px rgba(56, 189, 248, 0.8); text-transform: uppercase;">OP: <span id="dispUser" style="color: #fff; text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);"></span></p>
+            </div>
+            <button type="button" class="btn-sair-mini" onclick="confirmarLogout()" title="Sair do Sistema">
+                <span class="nav-icon nav-icon-logout" style="margin-right: 8px;">🚪</span><span class="nav-text">LOGOUT</span>
+            </button>
+        </div>
+
+        <div class="nav-menu">
+            <button type="button" class="nav-btn" id="btnTabAdmin" onclick="mudarAba('abaAdmin', this)" title="Importação"><span class="nav-icon">📂</span><span class="nav-text">IMPORTAÇÃO</span></button>
+            <button type="button" class="nav-btn" id="btnTabCheckin" onclick="mudarAba('abaCheckin', this)" title="Check-in Portaria"><span class="nav-icon">🛂</span><span class="nav-text">CHECK-IN</span></button>
+            <button type="button" class="nav-btn" id="btnTabTv" onclick="mudarAba('abaTv', this)" title="Monitor TV"><span class="nav-icon">📺</span><span class="nav-text">MONITOR TV</span></button>
+            <button type="button" class="nav-btn" id="btnTabMesas" onclick="mudarAba('abaMesas', this)" title="Atendimento"><span class="nav-icon">🎯</span><span class="nav-text">ATENDIMENTO</span></button>
+            <button type="button" class="nav-btn" id="btnTabRadar" onclick="mudarAba('abaRadar', this)" title="Radar Global"><span class="nav-icon">🌍</span><span class="nav-text">RADAR GLOBAL</span></button>
+            <button type="button" class="nav-btn" id="btnTabFinalFila" onclick="mudarAba('abaFinalFila', this)" title="Final de Fila"><span class="nav-icon">🚨</span><span class="nav-text">FINAL DE FILA</span></button>
+            <button type="button" class="nav-btn" id="btnTabControle" onclick="mudarAba('abaControle', this)" title="Controle de Mesas"><span class="nav-icon">🔐</span><span class="nav-text">MESAS</span></button>
+            <button type="button" class="nav-btn" id="btnTabPresentes" onclick="mudarAba('abaPresentes', this)" title="Presentes"><span class="nav-icon">✅</span><span class="nav-text">PRESENTES</span></button>
+            <button type="button" class="nav-btn" id="btnTabHistorico" onclick="mudarAba('abaHistorico', this)" title="Histórico"><span class="nav-icon">🕘</span><span class="nav-text">HISTÓRICO</span></button>
+        </div>
+
+        <button type="button" class="toggle-btn-bottom" onclick="toggleSidebar()" title="Expandir/Recolher Menu">☰</button>
+    </div>
+
+    <div class="main-panel">
+        <div class="tab-content-area">
+
+            <div id="abaAdmin" class="aba">
+                <h2>GESTÃO DE DADOS (IMPORT)</h2>
+                <div class="cards-grid-admin">
+                    <div class="card-admin">
+                        <h3>📂 IMPORTAÇÃO DE PRESENÇA</h3>
+                        <p style="color:#94a3b8; font-size:12px; margin-top:0;">Aceita CSV ou Excel. Para Excel, será usada a aba <b>PRESENCA</b>. Colunas esperadas: <b>Gaiola</b>, <b>ID</b>, <b>Motorista</b>.</p>
+                        <input type="file" id="importArquivo" accept=".xlsx, .xls, .csv">
+                        <button type="button" class="btn-padrao btn-acao" style="width: 100%; margin-top: 15px;" onclick="aplicarImportacao()">APLICAR IMPORTAÇÃO</button>
+                    </div>
+                    <div class="card-admin">
+                        <h3>✍️ INCLUSÃO MANUAL</h3>
+                        <div class="mini-grid">
+                            <input type="text" id="manualGaiola" placeholder="GAIOLA (EX: A-22)">
+                            <input type="text" id="manualId" placeholder="ID">
+                            <input type="text" id="manualMotorista" placeholder="MOTORISTA" style="grid-column:1 / 3;">
+                        </div>
+                        <div style="display:flex; align-items:center; gap:10px; margin-top:12px;">
+                            <input type="checkbox" id="manualNoShow" style="width:auto; transform:scale(1.3);">
+                            <label for="manualNoShow" style="font-family:'Segoe UI'; font-size:13px; color:#f59e0b; font-weight:bold;">INCLUIR COMO NO-SHOW / PRIORIDADE</label>
+                        </div>
+                        <button type="button" class="btn-padrao" style="width:100%; margin-top:15px;" onclick="incluirManual()">ADICIONAR MOTORISTA</button>
+                    </div>
+                </div>
+                <div style="margin-top:auto; padding-top:20px; display: flex; justify-content: space-between;">
+                    <button type="button" class="btn-padrao btn-critico" onclick="limparDados()">ZERAR DIA</button>
+                </div>
+            </div>
+
+            <div id="abaControle" class="aba">
+                <h2 style="color: #38bdf8;">🔐 CONTROLE DE MESAS</h2>
+                <p style="color:#94a3b8; font-size:12px; margin-top:5px;">Gerencie e libere mesas que ficaram presas no servidor.</p>
+                <div style="display: flex; gap: 20px; margin-top: 15px; height: 100%;">
+                    <div style="flex: 1; background: #0b132b; border: 1px solid #1e293b; border-radius: 8px; padding: 20px; display: flex; flex-direction: column;">
+                        <h3 style="color: #cbd5e1; border-bottom: 1px dashed #334155; padding-bottom: 10px;">🖥️ MESAS OCUPADAS ATUALMENTE</h3>
+                        <div class="table-wrapper" style="margin-top: 10px;">
+                            <table>
+                                <thead><tr><th>NOME DA MESA</th><th align="right">AÇÃO</th></tr></thead>
+                                <tbody id="tabelaMesasAdmin"></tbody>
+                            </table>
+                        </div>
+                        <button type="button" class="btn-padrao btn-critico" style="margin-top: 15px; width: 100%; font-size: 11px;" onclick="destravarMesas()">DESLOGAR TODAS AS MESAS FORÇADAMENTE</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="abaCheckin" class="aba">
+                <h2>PORTARIA DE ACESSO (CHECK-IN)</h2>
+                <p style="color:#94a3b8; font-size:14px; margin-bottom: 20px;">Realize a leitura do ID do motorista para enviá-lo ao radar.</p>
+                <input type="text" id="coletor" placeholder="VERDE: PODE BIPAR O ID AQUI..." autocomplete="off">
+                <div style="margin-top: 25px;">
+                    <label style="font-family: 'Segoe UI'; font-weight: 600; font-size: 12px; color: #64748b; letter-spacing: 1px;">CONSOLE DE REGISTRO:</label>
+                    <div class="console-box" id="consoleLog">
+                        <div class="log-linha">SISTEMA INICIADO. AGUARDANDO BIPE.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="abaMesas" class="aba">
+                <div class="mesas-grid">
+                    <div class="card-radar">
+                        <h3>📡 FILA DE ESPERA</h3>
+                        <div class="table-wrapper"><table id="tabelaAguardandoMesa"><thead><tr><th>GAIOLA / MOTORISTA</th><th>ESPERA</th><th>AÇÃO</th></tr></thead><tbody></tbody></table></div>
+                    </div>
+                    <div class="card-decor">
+                        <div style="font-size: 35px; color: #38bdf8;">🖥️</div>
+                        <h3 id="displayNomeMesaGrande">MESA</h3>
+                        <div class="ff-box">
+                            <label>🚨 FINAL DE FILA (GAIOLA / LETRA)</label>
+                            <input type="text" id="inputFinalFila" placeholder="DIGITAR GAIOLA OU LETRA..." oninput="this.value = this.value.toUpperCase()" onkeypress="if(event.key === 'Enter') { event.preventDefault(); addRotaFinalFila(); }">
+                            <button type="button" class="btn-padrao btn-critico" style="width:100%; margin-top:10px;" onclick="addRotaFinalFila()">SALVAR REGRA</button>
+                        </div>
+                    </div>
+                    <div class="card-analise">
+                        <h3 style="color: #10b981;">🟢 EM ANÁLISE</h3>
+                        <div class="table-wrapper"><table><thead><tr><th>GAIOLA</th><th>TEMPO</th><th align="right">AÇÃO</th></tr></thead><tbody id="tabelaMinhaMesa"></tbody></table></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="abaTv" class="aba" style="padding: 0;">
+                <div class="tv-layout">
+                    <div class="tv-historico">
+                        <h3 style="color:#10b981; border-bottom:1px dashed rgba(16, 185, 129, 0.5); padding-bottom:10px; text-align:center;">🟢 EM ATENDIMENTO</h3>
+                        <div id="tvEmAtendimentoLista" style="overflow-y: auto; flex-grow: 1;"></div>
+                    </div>
+
+                    <div class="tv-main">
+                        <button type="button" id="btnAtivarVoz" onclick="ativarVozTV()" style="padding:10px; background:#38bdf8; border:none; cursor:pointer; border-radius:4px; font-weight:bold; position:absolute; top:20px; left:20px; z-index:100;">Ligar Áudio da TV</button>
+                        <div class="alerta-tv" id="textoAlerta">PAINEL STANDBY</div>
+                        <div class="placa-tv" id="displayPlaca">---</div>
+                        <div class="nome-mtr" id="displayNomeMotorista">AGUARDANDO...</div>
+                        <div id="displayBancadaContainer" style="display:none;">
+                            <span id="prefixoMesa">DIRIJA-SE À</span>
+                            <span id="displayBancada"></span>
+                        </div>
+                    </div>
+
+                    <div class="tv-historico">
+                        <h3 style="color:#ef4444; border-bottom:1px dashed rgba(239, 68, 68, 0.5); padding-bottom:10px; text-align:center;">🚨 RETIDOS (FINAL)</h3>
+                        <div id="tvFinalFilaLista" style="overflow-y: auto; flex-grow: 1;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="abaRadar" class="aba">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">RADAR GLOBAL (TEMPO REAL)</h2>
+                    <div style="background: #1e293b; border: 1px solid #334155; padding: 10px 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+                        <div style="font-size: 11px; color: #94a3b8; font-weight: bold; letter-spacing: 1px; margin-bottom: 5px;">TEMPO MÉD. ATENDIMENTO</div>
+                        <div id="displayTempoMedio" style="font-size: 22px; font-weight: bold; color: #38bdf8; text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);">00m 00s</div>
+                    </div>
+                </div>
+                <div class="table-wrapper"><table><thead><tr><th>GAIOLA / MOTORISTA</th><th>MESA</th><th>STATUS</th><th>DURAÇÃO</th></tr></thead><tbody id="tabelaDashboard"></tbody></table></div>
+            </div>
+
+            <div id="abaFinalFila" class="aba">
+                <h2 style="color: #ef4444;">🚨 GESTÃO: FINAL DE FILA</h2>
+                <div class="table-wrapper" style="border-color: rgba(239,68,68,0.3);">
+                    <table><thead><tr><th>GAIOLA / MOTORISTA</th><th>CHECK-IN</th><th align="right">AÇÃO</th></tr></thead><tbody id="tabelaFinalFilaAdmin"></tbody></table>
+                </div>
+            </div>
+
+            <div id="abaPresentes" class="aba">
+                <h2 style="color:#10b981;">✅ TÓPICO: PRESENTES</h2>
+                <p style="color:#94a3b8; font-size:14px; margin-bottom: 10px;">Informe as letras liberadas separadas por vírgula. Exemplo: <b>A,B</b></p>
+                <div style="display:grid; grid-template-columns: 1fr auto; gap:15px; margin-bottom:15px;">
+                    <input type="text" id="inputLetrasLiberadas" placeholder="ROTA LIBERADA: A,B,C" oninput="this.value = this.value.toUpperCase()">
+                    <button type="button" class="btn-padrao btn-acao" onclick="salvarLetrasLiberadas()">SALVAR</button>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>GAIOLA</th><th>MOTORISTA</th><th>ID</th><th>STATUS</th></tr></thead>
+                        <tbody id="tabelaPresentes"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="abaHistorico" class="aba">
+                <h2 style="color:#38bdf8;">🕘 HISTÓRICO DE CHAMADAS DO DIA</h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>HORÁRIO</th><th>GAIOLA</th><th>MOTORISTA</th><th>MESA</th></tr></thead>
+                        <tbody id="tabelaHistoricoChamadas"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBL4Fv5E-qdlgfTEBDVAwQcDQ17RC1Hpbc",
+            authDomain: "gestao-expedicao-lmg44.firebaseapp.com",
+            databaseURL: "https://gestao-expedicao-lmg44-default-rtdb.firebaseio.com",
+            projectId: "gestao-expedicao-lmg44",
+            storageBucket: "gestao-expedicao-lmg44.firebasestorage.app",
+            messagingSenderId: "74402920468",
+            appId: "1:74402920468:web:17d8794959ece8f62b0f01",
+            measurementId: "G-ZRJ6L5WZWZ"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const uAtu = sessionStorage.getItem('usuarioLogado'), lAtu = sessionStorage.getItem('lugarLogado');
+
+        let veiculos = [], regrasFinalFila = [], listaMesas = [], historicoChamadas = [], letrasLiberadas = [];
+        let audioFila = [], estaFalando = false, uDataChamada = 0;
+
+        if (!uAtu) window.location.href = "index.html";
+        document.getElementById('dispUser').innerText = uAtu;
+
+        const bA=document.getElementById('btnTabAdmin'), bC=document.getElementById('btnTabCheckin'), bT=document.getElementById('btnTabTv'), bM=document.getElementById('btnTabMesas'), bR=document.getElementById('btnTabRadar'), bF=document.getElementById('btnTabFinalFila'), bCtrl=document.getElementById('btnTabControle'), bP=document.getElementById('btnTabPresentes'), bH=document.getElementById('btnTabHistorico');
+
+        db.ref('.info/connected').on('value', s => {
+            document.getElementById('txtServidor').innerText = s.val() ? 'ONLINE' : 'CONECTANDO...';
+        });
+
+        if(lAtu === 'Admin') {
+            [bA, bC, bT, bM, bR, bF, bCtrl, bP, bH].forEach(b => { if(b) b.style.display = 'flex'; });
+            if(bA) bA.click();
+        } else {
+            document.body.classList.add('is-mesa-operacao');
+            [bM, bF, bP, bH].forEach(b => { if(b) b.style.display = 'flex'; });
+            if(bM) bM.click();
+            let dNome = document.getElementById('displayNomeMesaGrande');
+            if(dNome && lAtu) dNome.innerText = lAtu.toUpperCase();
+
+            if(bA) bA.remove(); if(bC) bC.remove(); if(bT) bT.remove();
+            if(bR) bR.remove(); if(bCtrl) bCtrl.remove();
+
+            db.ref('mesasOcupadas').once('value').then(s => {
+                let ocupadas = s.val() || [];
+                if(lAtu && !ocupadas.includes(lAtu)) {
+                    ocupadas.push(lAtu);
+                    db.ref('mesasOcupadas').set(ocupadas);
+                }
+            });
+        }
+
+        db.ref('veiculos').on('value', s => { veiculos = s.val() || []; renderizarTelas(); });
+        db.ref('regrasFinalFila').on('value', s => { regrasFinalFila = s.val() || []; renderizarTelas(); });
+        db.ref('mesasOcupadas').on('value', s => { listaMesas = s.val() || []; renderizarControleMesas(); });
+        db.ref('historicoChamadas').on('value', s => { historicoChamadas = s.val() || []; renderizarHistoricoChamadas(); });
+        db.ref('letrasLiberadas').on('value', s => {
+            letrasLiberadas = s.val() || [];
+            const input = document.getElementById('inputLetrasLiberadas');
+            if(input && document.activeElement !== input) input.value = letrasLiberadas.join(',');
+            renderizarPresentes();
+            renderizarTelas();
+        });
+
+        db.ref('tvComando').on('value', s => {
+            const d = s.val();
+            if(d && d.data > uDataChamada) { uDataChamada = d.data; audioFila.push(d); processarFilaAudio(); }
+        });
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+        function mudarAba(id, b) { document.querySelectorAll('.aba').forEach(a=>a.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(btn=>btn.classList.remove('active')); document.getElementById(id).classList.add('active'); b.classList.add('active'); if(id==='abaCheckin') setTimeout(()=>document.getElementById('coletor').focus(),100); }
+
+        window.confirmarLogout = function() {
+            if(confirm("Deseja realmente sair do sistema e liberar sua mesa?")) {
+                fazerLogout();
+            }
+        };
+
+        function fazerLogout() {
+            if(lAtu && lAtu !== 'Admin') {
+                db.ref('mesasOcupadas').once('value').then((snapshot) => {
+                    let ocupadas = snapshot.val() || [];
+                    ocupadas = ocupadas.filter(m => m !== lAtu);
+                    db.ref('mesasOcupadas').set(ocupadas).then(() => {
+                        sessionStorage.clear();
+                        window.location.href = "index.html";
+                    });
+                });
+            } else {
+                sessionStorage.clear();
+                window.location.href = "index.html";
+            }
+        }
+
+        function normalizarTexto(v) { return String(v || '').trim().toUpperCase(); }
+        function extrairLetra(gaiola) { return normalizarTexto(gaiola).split('-')[0]; }
+        function temRegraFinalFila(veiculo) {
+            const gaiola = normalizarTexto(veiculo.gaiola);
+            const letra = extrairLetra(gaiola);
+            return regrasFinalFila.includes(gaiola) || regrasFinalFila.includes(letra);
+        }
+
+        function criarVeiculoBase(gaiola, id, nome, manualNoShow=false) {
+            return {
+                id: normalizarTexto(id),
+                gaiola: normalizarTexto(gaiola),
+                nome: normalizarTexto(nome) || "MOTORISTA DESCONHECIDO",
+                status: 'NO_PERIMETRO',
+                chegada: null,
+                horaChamada: null,
+                horaFinalizado: null,
+                finalizado: false,
+                mesaResponsavel: '',
+                prioridadeNoShow: !!manualNoShow,
+                ausenteLiberacao: false,
+                criadoManual: !!manualNoShow || true
+            };
+        }
+
+        function upsertVeiculo(novo) {
+            let idx = veiculos.findIndex(v => v.id === novo.id);
+            let lista = [...veiculos];
+            if(idx >= 0) {
+                lista[idx] = { ...lista[idx], ...novo };
+            } else {
+                lista.push(novo);
+            }
+            db.ref('veiculos').set(lista);
+        }
+
+        function parseCsvLine(line) {
+            const result = [];
+            let cur = '', inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (ch === '"') {
+                    if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+                    else inQuotes = !inQuotes;
+                } else if (ch === ',' && !inQuotes) {
+                    result.push(cur); cur = '';
+                } else if (ch === ';' && !inQuotes) {
+                    result.push(cur); cur = '';
+                } else {
+                    cur += ch;
+                }
+            }
+            result.push(cur);
+            return result;
+        }
+
+        function importarLinhasNormalizadas(registros) {
+            let lista = [...veiculos];
+            let adicionados = 0;
+
+            registros.forEach(r => {
+                const gaiola = normalizarTexto(r.gaiola || r.Gaiola || r.GAIOLA);
+                const id = normalizarTexto(r.id || r.ID);
+                const nome = normalizarTexto(r.motorista || r.Motorista || r.MOTORISTA);
+                if(!id) return;
+
+                const existente = lista.find(v => v.id === id);
+                if(existente) {
+                    existente.gaiola = gaiola || existente.gaiola;
+                    existente.nome = nome || existente.nome;
+                } else {
+                    lista.push({
+                        id,
+                        gaiola: gaiola || "SEM-GAIOLA",
+                        nome: nome || "MOTORISTA DESCONHECIDO",
+                        status: 'NO_PERIMETRO',
+                        chegada: null,
+                        horaChamada: null,
+                        horaFinalizado: null,
+                        finalizado: false,
+                        mesaResponsavel: '',
+                        prioridadeNoShow: false,
+                        ausenteLiberacao: false,
+                        criadoManual: false
+                    });
+                    adicionados++;
+                }
+            });
+
+            db.ref('veiculos').set(lista);
+            alert(`✅ IMPORTAÇÃO CONCLUÍDA!\n${adicionados} motoristas adicionados.`);
+            document.getElementById('importArquivo').value = '';
+        }
+
+        window.aplicarImportacao = function() {
+            let input = document.getElementById('importArquivo');
+            if(!input.files[0]) return alert("Selecione um arquivo CSV ou Excel primeiro.");
+
+            const arquivo = input.files[0];
+            const nome = arquivo.name.toLowerCase();
+
+            if(nome.endsWith('.csv')) {
+                const reader = new FileReader();
+                reader.onload = function(evento) {
+                    try {
+                        const texto = evento.target.result.replace(/\r/g, '');
+                        const linhas = texto.split('\n').filter(l => l.trim());
+                        if(linhas.length < 2) return alert("CSV sem dados suficientes.");
+
+                        const headers = parseCsvLine(linhas[0]).map(h => normalizarTexto(h));
+                        const idxG = headers.findIndex(h => h === 'GAIOLA');
+                        const idxI = headers.findIndex(h => h === 'ID');
+                        const idxM = headers.findIndex(h => h === 'MOTORISTA');
+
+                        if(idxG === -1 || idxI === -1 || idxM === -1) {
+                            return alert("CSV inválido. Cabeçalhos esperados: Gaiola, ID, Motorista.");
+                        }
+
+                        const regs = [];
+                        for(let i=1; i<linhas.length; i++) {
+                            const c = parseCsvLine(linhas[i]);
+                            regs.push({ gaiola: c[idxG], id: c[idxI], motorista: c[idxM] });
+                        }
+                        importarLinhasNormalizadas(regs);
+                    } catch(e) {
+                        console.error(e);
+                        alert("Erro ao processar o CSV.");
+                    }
+                };
+                reader.readAsText(arquivo, 'utf-8');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(evento) {
+                try {
+                    let data = new Uint8Array(evento.target.result);
+                    let workbook = XLSX.read(data, {type: 'array'});
+                    let nomeAbaCorreta = workbook.SheetNames.find(n => normalizarTexto(n) === 'PRESENCA');
+                    if (!nomeAbaCorreta) return alert("ERRO: A aba 'PRESENCA' não foi encontrada no arquivo Excel.");
+
+                    let sheet = workbook.Sheets[nomeAbaCorreta];
+                    let dados = XLSX.utils.sheet_to_json(sheet, {defval: ""});
+                    importarLinhasNormalizadas(dados);
+                } catch (error) {
+                    console.error(error);
+                    alert("Erro ao processar o arquivo Excel.");
+                }
+            };
+            reader.readAsArrayBuffer(arquivo);
+        };
+
+        window.incluirManual = function() {
+            const gaiola = document.getElementById('manualGaiola').value.trim().toUpperCase();
+            const id = document.getElementById('manualId').value.trim().toUpperCase();
+            const nome = document.getElementById('manualMotorista').value.trim().toUpperCase();
+            const noShow = document.getElementById('manualNoShow').checked;
+
+            if(!gaiola || !id || !nome) return alert("Preencha GAIOLA, ID e MOTORISTA.");
+
+            const lista = [...veiculos];
+            if(lista.find(v => v.id === id)) return alert("Este ID já existe no sistema.");
+
+            lista.push({
+                id, gaiola, nome,
+                status: noShow ? 'AGUARDANDO' : 'NO_PERIMETRO',
+                chegada: noShow ? Date.now() : null,
+                horaChamada: null,
+                horaFinalizado: null,
+                finalizado: false,
+                mesaResponsavel: '',
+                prioridadeNoShow: noShow,
+                ausenteLiberacao: false,
+                criadoManual: true
+            });
+            db.ref('veiculos').set(lista);
+
+            document.getElementById('manualGaiola').value = '';
+            document.getElementById('manualId').value = '';
+            document.getElementById('manualMotorista').value = '';
+            document.getElementById('manualNoShow').checked = false;
+
+            alert(noShow ? "Motorista incluído com prioridade de no-show." : "Motorista incluído manualmente.");
+        };
+
+        function renderizarControleMesas() {
+            const tM = document.getElementById('tabelaMesasAdmin');
+            if(!tM) return;
+            tM.innerHTML = '';
+            if(listaMesas.length === 0) {
+                tM.innerHTML = `<tr><td colspan="2" align="center" style="color:#64748b; padding: 20px;">TODAS AS MESAS ESTÃO LIVRES.</td></tr>`;
+            } else {
+                listaMesas.forEach(m => {
+                    tM.innerHTML += `<tr><td style="color:#38bdf8; font-weight:bold;">${m.toUpperCase()}</td><td align="right"><button type="button" class="btn-padrao btn-critico" style="padding: 4px 8px; font-size:10px;" onclick="desconectarMesa('${m}')">DESLOGAR</button></td></tr>`;
+                });
+            }
+        }
+
+        window.desconectarMesa = function(m) { if(confirm(`Liberar a ${m}?`)) { let t = listaMesas.filter(x => x !== m); db.ref('mesasOcupadas').set(t); } };
+        window.destravarMesas = function() { if(confirm("Liberar todas as mesas forçadamente?")) db.ref('mesasOcupadas').set(null); };
+
+        function processarFilaAudio() {
+            if (estaFalando || audioFila.length === 0) return;
+            estaFalando = true;
+            const d = audioFila.shift();
+            document.getElementById('displayPlaca').innerText = d.gaiola || d.rota || '---';
+            document.getElementById('displayNomeMotorista').innerText = d.nome;
+            document.getElementById('displayBancada').innerText = d.mesa.toUpperCase().replace('MESA ', '');
+            document.getElementById('displayBancadaContainer').style.display = 'block';
+            document.getElementById('textoAlerta').style.animation = 'piscaAlerta 1s infinite alternate';
+            document.getElementById('textoAlerta').innerText = "ATENÇÃO: DESLOCAMENTO";
+
+            let abaTv = document.getElementById('abaTv');
+            if (lAtu === 'Admin' && abaTv && abaTv.classList.contains('active')) {
+                window.speechSynthesis.cancel();
+                let u = new SpeechSynthesisUtterance(`Atenção motorista ${d.nome}, gaiola ${d.gaiola || d.rota}. Dirija-se à ${d.mesa}.`);
+                u.lang = 'pt-BR'; u.onend = () => { estaFalando = false; setTimeout(processarFilaAudio, 1000); };
+                window.speechSynthesis.speak(u);
+            } else { setTimeout(() => { estaFalando = false; processarFilaAudio(); }, 5000); }
+        }
+
+        window.addRotaFinalFila = function() {
+            let valor = document.getElementById('inputFinalFila').value.trim().toUpperCase();
+            if(!valor) return;
+
+            let vt = [...veiculos];
+            let atualizouVeiculo = false;
+
+            vt.forEach(x => {
+                const letra = extrairLetra(x.gaiola);
+                if((x.gaiola === valor || letra === valor) && x.status === 'AGUARDANDO') {
+                    x.status = 'FINAL_FILA';
+                    x.chegada = Date.now();
+                    atualizouVeiculo = true;
+                }
+            });
+
+            if(atualizouVeiculo) db.ref('veiculos').set(vt);
+
+            let f = [...regrasFinalFila];
+            if(!f.includes(valor)) {
+                f.push(valor);
+                db.ref('regrasFinalFila').set(f);
+                alert("Regra de final de fila salva.");
+            } else {
+                alert("Esta regra já está ativa.");
+            }
+
+            document.getElementById('inputFinalFila').value = '';
+        };
+
+        window.liberarFinalFila = function(id) {
+            let vt = [...veiculos], v = vt.find(x => x.id === id);
+            if(v) { v.status = 'AGUARDANDO'; v.chegada = Date.now(); v.ausenteLiberacao = false; db.ref('veiculos').set(vt); }
+        };
+
+        function salvarHistoricoChamada(v) {
+            const h = [...historicoChamadas];
+            h.unshift({
+                id: v.id,
+                gaiola: v.gaiola,
+                nome: v.nome,
+                mesa: lAtu,
+                data: Date.now()
+            });
+            db.ref('historicoChamadas').set(h.slice(0, 500));
+        }
+
+        window.chamarVeiculo = function(id) {
+            let vt = [...veiculos];
+            vt.forEach(x => {
+                if(x.status === 'EM_ATENDIMENTO' && x.mesaResponsavel === lAtu) {
+                    x.status = 'FINALIZADO';
+                    x.horaFinalizado = Date.now();
+                }
+            });
+
+            let v = vt.find(x => x.id === id);
+            if(v) {
+                v.status = 'EM_ATENDIMENTO';
+                v.mesaResponsavel = lAtu;
+                v.horaChamada = Date.now();
+                v.ausenteLiberacao = false;
+                db.ref('veiculos').set(vt);
+                db.ref('tvComando').set({ id: v.id, gaiola: v.gaiola, nome: v.nome, mesa: lAtu, data: Date.now() });
+                salvarHistoricoChamada(v);
+            }
+        };
+
+        window.penalizarVeiculo = function(id) {
+            if(confirm("O motorista não compareceu? Enviar para o Final de Fila?")) {
+                let vt = [...veiculos];
+                let v = vt.find(x => x.id === id);
+                if(v) {
+                    v.status = 'FINAL_FILA';
+                    v.chegada = Date.now();
+                    v.mesaResponsavel = '';
+                    v.prioridadeNoShow = true;
+                    db.ref('veiculos').set(vt);
+                    let f = [...regrasFinalFila];
+                    let letra = extrairLetra(v.gaiola);
+                    if(!f.includes(letra)) { f.push(letra); db.ref('regrasFinalFila').set(f); }
+                }
+            }
+        };
+
+        window.salvarLetrasLiberadas = function() {
+            const letras = document.getElementById('inputLetrasLiberadas').value
+                .split(',')
+                .map(v => v.trim().toUpperCase())
+                .filter(Boolean);
+            db.ref('letrasLiberadas').set(letras);
+
+            let vt = [...veiculos];
+            let mudou = false;
+            vt.forEach(v => {
+                const letra = extrairLetra(v.gaiola);
+                if(letras.includes(letra) && (v.status === 'NO_PERIMETRO' || v.status === 'ATRASADO_AUSENTE')) {
+                    v.status = 'ATRASADO_AUSENTE';
+                    v.ausenteLiberacao = true;
+                    mudou = true;
+                }
+            });
+            if(mudou) db.ref('veiculos').set(vt);
+        };
+
+        window.limparDados = function() {
+            if(confirm("ATENÇÃO: Isso apagará TODOS os dados, histórico e check-ins do dia. Deseja continuar?")) {
+                db.ref('veiculos').set(null);
+                db.ref('regrasFinalFila').set(null);
+                db.ref('tvComando').set(null);
+                db.ref('historicoChamadas').set(null);
+                db.ref('letrasLiberadas').set(null);
+
+                const consoleBox = document.getElementById('consoleLog');
+                if(consoleBox) consoleBox.innerHTML = '<div class="log-linha">SISTEMA ZERADO. AGUARDANDO NOVA IMPORTAÇÃO.</div>';
+
+                const dPlaca = document.getElementById('displayPlaca');
+                if(dPlaca) {
+                    dPlaca.innerText = "---";
+                    document.getElementById('displayNomeMotorista').innerText = "AGUARDANDO...";
+                    document.getElementById('displayBancadaContainer').style.display = 'none';
+                    document.getElementById('textoAlerta').innerText = "PAINEL STANDBY";
+                    document.getElementById('textoAlerta').style.animation = 'none';
+                }
+                alert("Sistema zerado com sucesso! Pronto para o próximo dia.");
+            }
+        };
+
+        function formatarTempoLive(ms) {
+            if(!ms || ms < 0) return "0m 00s";
+            let s = Math.floor(ms/1000), m = Math.floor(s/60);
+            return `${m}m ${s%60 < 10 ? '0' : ''}${s%60}s`;
+        }
+
+        function renderizarHistoricoChamadas() {
+            const t = document.getElementById('tabelaHistoricoChamadas');
+            if(!t) return;
+            t.innerHTML = '';
+            if(!historicoChamadas.length) {
+                t.innerHTML = `<tr><td colspan="4" align="center" style="color:#64748b;">SEM CHAMADAS NO DIA.</td></tr>`;
+                return;
+            }
+            historicoChamadas.forEach(h => {
+                t.innerHTML += `<tr>
+                    <td>${new Date(h.data).toLocaleTimeString()}</td>
+                    <td>${h.gaiola || '-'}</td>
+                    <td>${h.nome || '-'}</td>
+                    <td>${h.mesa || '-'}</td>
+                </tr>`;
+            });
+        }
+
+        function statusPresenca(v) {
+            if(v.status === 'EM_ATENDIMENTO' || v.status === 'FINALIZADO') return { txt:'CHAMADO', cls:'chip-chamado' };
+            if(v.status === 'AGUARDANDO' || v.status === 'FINAL_FILA') return { txt:'PRESENTE', cls:'chip-presente' };
+            if(v.status === 'ATRASADO_AUSENTE') return { txt:'AUSENTE', cls:'chip-ausente' };
+            return { txt:'AUSENTE', cls:'chip-ausente' };
+        }
+
+        function renderizarPresentes() {
+            const t = document.getElementById('tabelaPresentes');
+            if(!t) return;
+            t.innerHTML = '';
+
+            const filtrados = veiculos.filter(v => letrasLiberadas.includes(extrairLetra(v.gaiola)))
+                .sort((a,b) => a.gaiola.localeCompare(b.gaiola));
+
+            if(!filtrados.length) {
+                t.innerHTML = `<tr><td colspan="4" align="center" style="color:#64748b;">NENHUMA GAIOLA ENCONTRADA PARA AS LETRAS LIBERADAS.</td></tr>`;
+                return;
+            }
+
+            filtrados.forEach(v => {
+                const st = statusPresenca(v);
+                t.innerHTML += `<tr>
+                    <td>${v.gaiola || '-'}</td>
+                    <td>${v.nome || '-'}</td>
+                    <td>${v.id || '-'}</td>
+                    <td><span class="status-chip ${st.cls}">${st.txt}</span></td>
+                </tr>`;
+            });
+        }
+
+        function renderizarTelas() {
+            const tD = document.getElementById('tabelaDashboard'), tA = document.querySelector('#tabelaAguardandoMesa tbody'),
+                  tM = document.getElementById('tabelaMinhaMesa'), tF = document.getElementById('tabelaFinalFilaAdmin');
+
+            const lAtendTV = document.getElementById('tvEmAtendimentoLista');
+            const lFilaTV = document.getElementById('tvFinalFilaLista');
+            const elTempoMedio = document.getElementById('displayTempoMedio');
+
+            [tD, tA, tM, tF].forEach(t => { if(t) t.innerHTML = ''; });
+            let ag = Date.now();
+
+            let aguardando = veiculos.filter(v =>
+                v.status === 'AGUARDANDO' ||
+                (v.status === 'EM_ATENDIMENTO' && (ag - v.horaChamada < 7000))
+            );
+
+            aguardando.sort((a, b) => {
+                if(!!b.prioridadeNoShow !== !!a.prioridadeNoShow) return (b.prioridadeNoShow ? 1 : 0) - (a.prioridadeNoShow ? 1 : 0);
+                return (a.chegada || 0) - (b.chegada || 0);
+            });
+
+            let totalTempoMs = 0;
+            let qtdFinalizados = 0;
+
+            veiculos.forEach(v => {
+                if(v.status === 'NO_PERIMETRO') {
+                    if(letrasLiberadas.includes(extrairLetra(v.gaiola))) {
+                        v.status = 'ATRASADO_AUSENTE';
+                    } else {
+                        return;
+                    }
+                }
+
+                let dur = (v.status === 'FINALIZADO') ? (v.horaFinalizado - v.horaChamada) : (ag - (v.horaChamada || v.chegada || ag));
+
+                if(v.status === 'FINALIZADO' && v.horaFinalizado && v.horaChamada) {
+                    totalTempoMs += (v.horaFinalizado - v.horaChamada);
+                    qtdFinalizados++;
+                }
+
+                let statusTxt = v.status;
+                if(v.status === 'ATRASADO_AUSENTE') statusTxt = 'ATRASO/AUSENTE';
+
+                if(tD) tD.innerHTML += `<tr><td>${v.gaiola || '-'}<br><small>${v.nome}</small></td><td>${v.mesaResponsavel || '-'}</td><td>${statusTxt}${v.prioridadeNoShow ? ' <span class="tag-noshow">• NO-SHOW</span>' : ''}</td><td>${formatarTempoLive(dur)}</td></tr>`;
+
+                if(v.status === 'EM_ATENDIMENTO' && v.mesaResponsavel === lAtu && tM) {
+                    tM.innerHTML += `<tr>
+                        <td>${v.gaiola}</td>
+                        <td>${formatarTempoLive(ag - v.horaChamada)}</td>
+                        <td align="right">
+                            <button type="button" class="btn-padrao" style="border-color:#f59e0b; color:#f59e0b;" onclick="penalizarVeiculo('${v.id}')" title="Enviar para Final de Fila">RETIDO</button>
+                        </td>
+                    </tr>`;
+                }
+
+                if(v.status === 'FINAL_FILA' && tF) tF.innerHTML += `<tr><td style="color:#ef4444; font-weight:bold;">${v.gaiola}<br><small style="color:#fff;">${v.nome}</small></td><td>${v.chegada ? new Date(v.chegada).toLocaleTimeString() : '-'}</td><td align="right"><button type="button" class="btn-padrao" onclick="liberarFinalFila('${v.id}')">LIBERAR</button></td></tr>`;
+            });
+
+            if(elTempoMedio) {
+                if(qtdFinalizados > 0) elTempoMedio.innerText = formatarTempoLive(totalTempoMs / qtdFinalizados);
+                else elTempoMedio.innerText = "00m 00s";
+            }
+
+            aguardando.forEach(v => {
+                let isCongelado = v.status === 'EM_ATENDIMENTO' && (ag - v.horaChamada < 7000);
+                const destaqueNoShow = v.prioridadeNoShow ? `<div class="tag-noshow" style="margin-top:4px;">PRIORIDADE NO-SHOW</div>` : '';
+
+                if (isCongelado) {
+                    if(tA) tA.innerHTML += `<tr style="background: rgba(239, 68, 68, 0.1);">
+                        <td class="rota-text" style="opacity: 0.5;">${v.gaiola}<br><span class="nome-text">${v.nome}</span>${destaqueNoShow}</td>
+                        <td class="tempo-text" style="opacity: 0.5;">${formatarTempoLive(ag - v.chegada)}</td>
+                        <td><div style="background:#ef4444; border: 1px solid #ef4444; border-radius:4px; height: 35px; width: 100%; box-sizing: border-box; box-shadow: 0 0 10px rgba(239,68,68,0.4);"></div></td>
+                    </tr>`;
+                } else {
+                    if(tA) tA.innerHTML += `<tr>
+                        <td class="rota-text">${v.gaiola}<br><span class="nome-text">${v.nome}</span>${destaqueNoShow}</td>
+                        <td class="tempo-text">${formatarTempoLive(ag - (v.chegada || ag))}</td>
+                        <td><button type="button" class="btn-padrao" onclick="chamarVeiculo('${v.id}')">PUXAR</button></td>
+                    </tr>`;
+                }
+            });
+
+            if(lAtendTV) {
+                let atendTV = veiculos.filter(v => v.status === 'EM_ATENDIMENTO').sort((a, b) => b.horaChamada - a.horaChamada).slice(0, 14);
+                let hAtend = '';
+                atendTV.forEach(v => {
+                    hAtend += `<div class="hist-item-tv atend">
+                                  <span class="hist-rota-tv" style="color:#10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">${v.gaiola}</span>
+                                  <span class="hist-nome-tv" style="font-size:11px;">${v.nome}</span>
+                                  <span style="color:#10b981; font-size:26px; font-weight:bold; display:block; margin-top:5px; letter-spacing:1px; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">${(v.mesaResponsavel || '').toUpperCase()}</span>
+                               </div>`;
+                });
+                lAtendTV.innerHTML = hAtend || '<center style="color:#4a5568; margin-top:20px;">NENHUM EM ATENDIMENTO</center>';
+            }
+
+            if(lFilaTV) {
+                let finalTV = veiculos.filter(v => v.status === 'FINAL_FILA' || v.status === 'ATRASADO_AUSENTE').sort((a, b) => (a.chegada || 0) - (b.chegada || 0)).slice(0, 10);
+                let hFim = '';
+                finalTV.forEach(v => {
+                    hFim += `<div class="hist-item-tv">
+                               <span class="hist-rota-tv">${v.gaiola}</span>
+                               <span class="hist-nome-tv" style="font-size:11px;">${v.nome}</span>
+                             </div>`;
+                });
+                lFilaTV.innerHTML = hFim || '<center style="color:#4a5568; margin-top:20px;">NENHUM RETIDO</center>';
+            }
+
+            renderizarPresentes();
+            renderizarHistoricoChamadas();
+        }
+
+        document.getElementById('coletor')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+
+                const id = this.value.trim().toUpperCase();
+                if(id) {
+                    this.disabled = true;
+                    let placeholderOriginal = "VERDE: PODE BIPAR O ID AQUI...";
+                    this.placeholder = "PROCESSANDO... AGUARDE 3 SEGUNDOS.";
+
+                    let vt = [...veiculos], v = vt.find(x => x.id === id);
+                    const consoleBox = document.getElementById('consoleLog');
+                    const dataHora = new Date().toLocaleTimeString();
+
+                    if (!v) {
+                        consoleBox.innerHTML += `<div class="log-linha log-erro">[${dataHora}] > ERRO: ID [${id}] NÃO ENCONTRADO.</div>`;
+                    } else if (v.status !== 'NO_PERIMETRO' && v.status !== 'ATRASADO_AUSENTE') {
+                        consoleBox.innerHTML += `<div class="log-linha" style="color: #f59e0b;">[${dataHora}] > AVISO: MOTORISTA JÁ FEZ CHECK-IN.</div>`;
+                    } else {
+                        const caiFinal = temRegraFinalFila(v);
+                        v.status = caiFinal ? 'FINAL_FILA' : 'AGUARDANDO';
+                        v.chegada = Date.now();
+                        v.ausenteLiberacao = false;
+                        db.ref('veiculos').set(vt);
+
+                        let spanRota = `<span class="log-rota-neon">${v.gaiola}</span>`;
+                        let msg = caiFinal ? `⚠️ REGRA ATIVA: ${spanRota}` : `CHECK-IN OK: ${spanRota}`;
+                        let cor = caiFinal ? "log-erro" : "log-ok";
+                        consoleBox.innerHTML += `<div class="log-linha ${cor}">[${dataHora}] > ${msg}</div>`;
+                    }
+                    consoleBox.scrollTop = consoleBox.scrollHeight;
+
+                    setTimeout(() => {
+                        this.value = '';
+                        this.placeholder = placeholderOriginal;
+                        this.disabled = false;
+                        this.focus();
+                    }, 3000);
+                }
+            }
+        });
+
+        setInterval(renderizarTelas, 1000);
+        window.ativarVozTV = function() { document.getElementById('btnAtivarVoz').style.display = 'none'; window.speechSynthesis.speak(new SpeechSynthesisUtterance("")); };
+    </script>
+</body>
+</html>

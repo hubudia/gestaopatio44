@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Acesso - Gestão Expedição</title>
+    <style>
+        body { margin: 0; font-family: 'Consolas', 'Courier New', monospace; background-color: #07090f; display: flex; justify-content: center; align-items: center; height: 100vh; color: #00f0ff; }
+        .caixa-login { background: #0b101a; padding: 40px; border-radius: 12px; box-shadow: 0 0 25px rgba(0, 240, 255, 0.05); width: 350px; text-align: center; border: 1px solid rgba(0, 240, 255, 0.2); position: relative; overflow: hidden;}
+        .caixa-login::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: #00f0ff; box-shadow: 0 0 15px #00f0ff; }
+        .logo-icon { font-size: 35px; margin-bottom: 10px; color: #00f0ff; text-shadow: 0 0 15px rgba(0, 240, 255, 0.5); }
+        h2 { margin: 0 0 25px 0; color: #fff; font-weight: 600; font-size: 22px; font-family: 'Segoe UI', sans-serif; letter-spacing: 2px; text-shadow: 0 0 10px rgba(0, 240, 255, 0.3); text-transform: uppercase;}
+        input, select { width: 100%; padding: 14px; margin: 10px 0; background: rgba(0,0,0,0.6); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 6px; box-sizing: border-box; font-size: 15px; color: #fff; outline: none; transition: all 0.3s ease; font-family: inherit;}
+        input::placeholder { color: #4a5568; }
+        input:focus, select:focus { border-color: #00f0ff; box-shadow: 0 0 12px rgba(0, 240, 255, 0.2); background: rgba(0, 240, 255, 0.02); }
+        select { font-weight: bold; text-transform: uppercase; color: #38bdf8; text-align: center;}
+        option { background: #0b101a; color: #fff; }
+        .btn { width: 100%; padding: 14px; background: rgba(0, 240, 255, 0.1); color: #00f0ff; border: 1px solid #00f0ff; border-radius: 6px; font-family: 'Segoe UI', sans-serif; font-size: 15px; cursor: pointer; font-weight: bold; margin-top: 20px; transition: all 0.2s; letter-spacing: 1px; text-transform: uppercase;}
+        .btn:hover { background: #00f0ff; color: #000; box-shadow: 0 0 15px rgba(0, 240, 255, 0.6); }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+    <script>
+        if (sessionStorage.getItem('usuarioLogado')) {
+            window.location.href = "painel.html";
+        }
+    </script>
+
+    <div class="caixa-login">
+        <div id="formLogin">
+            <div class="logo-icon">🚚</div>
+            <h2 id="statusNuvem" style="color: #f1c40f;">CONECTANDO...</h2>
+            <select id="lugarLogin">
+                <option value="">Aguardando Servidor...</option>
+            </select>
+            <input type="password" id="senhaLogin" placeholder="Digite a Senha" required autocomplete="off" onkeypress="if(event.key === 'Enter') { event.preventDefault(); fazerLogin(); }">
+            <button type="button" class="btn" onclick="fazerLogin()">ACESSAR EXPEDIÇÃO</button>
+        </div>
+    </div>
+
+    <script>
+        const TOTAL_DE_MESAS = 23;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBL4Fv5E-qdlgfTEBDVAwQcDQ17RC1Hpbc",
+            authDomain: "gestao-expedicao-lmg44.firebaseapp.com",
+            databaseURL: "https://gestao-expedicao-lmg44-default-rtdb.firebaseio.com",
+            projectId: "gestao-expedicao-lmg44",
+            storageBucket: "gestao-expedicao-lmg44.firebasestorage.app",
+            messagingSenderId: "74402920468",
+            appId: "1:74402920468:web:17d8794959ece8f62b0f01",
+            measurementId: "G-ZRJ6L5WZWZ"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let mesasOcupadas = [];
+
+        db.ref('.info/connected').on('value', function(connectedSnap) {
+            if (connectedSnap.val() === true) {
+                let statusEl = document.getElementById('statusNuvem');
+                statusEl.innerText = "GESTÃO EXPEDIÇÃO - LMG44";
+                statusEl.style.color = "#fff";
+            }
+        });
+
+        db.ref('mesasOcupadas').on('value', (snapshot) => {
+            mesasOcupadas = snapshot.val() || [];
+            carregarMesasLivres();
+        });
+
+        function carregarMesasLivres() {
+            const selectLugar = document.getElementById('lugarLogin');
+            const valorAtual = selectLugar.value;
+            selectLugar.innerHTML = '';
+
+            let optionAdmin = document.createElement('option');
+            optionAdmin.value = 'Admin';
+            optionAdmin.text = '🔧 ACESSO ADMIN';
+            selectLugar.appendChild(optionAdmin);
+
+            let temMesaLivre = false;
+            for(let i = 1; i <= TOTAL_DE_MESAS; i++) {
+                let nomeMesa = 'Mesa ' + i;
+                if(!mesasOcupadas.includes(nomeMesa)) {
+                    let option = document.createElement('option');
+                    option.value = nomeMesa;
+                    option.text = '🖥️ ' + nomeMesa.toUpperCase();
+                    selectLugar.appendChild(option);
+                    temMesaLivre = true;
+                }
+            }
+
+            if(valorAtual && Array.from(selectLugar.options).some(opt => opt.value === valorAtual)) {
+                selectLugar.value = valorAtual;
+            } else if (!temMesaLivre) {
+                selectLugar.value = "Admin";
+            }
+        }
+
+        function fazerLogin() {
+            const lugar = document.getElementById('lugarLogin').value;
+            const s = document.getElementById('senhaLogin').value.trim();
+
+            if(!lugar) return alert("Selecione a mesa ou o acesso Admin.");
+            if(!s) return alert("Digite a senha.");
+
+            if(lugar === 'Admin') {
+                if(s === 'spxadmin123') {
+                    logarComo('ADMIN', 'admin', 'Admin');
+                } else {
+                    alert("Acesso Negado: Senha de Administrador incorreta!");
+                }
+                return;
+            }
+
+            if (s === 'Seagroup.com') {
+                db.ref('mesasOcupadas').once('value').then((snapshot) => {
+                    let atuais = snapshot.val() || [];
+                    if(atuais.includes(lugar)) {
+                        return alert("Esta mesa acabou de ser acessada por outro operador. Escolha outra.");
+                    }
+                    atuais.push(lugar);
+                    db.ref('mesasOcupadas').set(atuais).then(() => {
+                        logarComo(lugar.toUpperCase(), 'operador', lugar);
+                    });
+                });
+            } else {
+                alert("Acesso Negado: Senha da Mesa incorreta!");
+            }
+        }
+
+        function logarComo(usuario, role, lugar) {
+            sessionStorage.setItem('usuarioLogado', usuario);
+            sessionStorage.setItem('roleLogado', role);
+            sessionStorage.setItem('lugarLogado', lugar);
+            window.location.href = "painel.html";
+        }
+    </script>
+</body>
+</html>
