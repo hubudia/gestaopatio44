@@ -142,6 +142,7 @@
             <button type="button" class="nav-btn" id="btnTabMesas" onclick="mudarAba('abaMesas', this)" title="Atendimento"><span class="nav-icon">🎯</span><span class="nav-text">ATENDIMENTO</span></button>
             <button type="button" class="nav-btn" id="btnTabRadar" onclick="mudarAba('abaRadar', this)" title="Radar Global"><span class="nav-icon">🌍</span><span class="nav-text">RADAR GLOBAL</span></button>
             <button type="button" class="nav-btn" id="btnTabFinalFila" onclick="mudarAba('abaFinalFila', this)" title="Final de Fila"><span class="nav-icon">🚨</span><span class="nav-text">FINAL DE FILA</span></button>
+            <button type="button" class="nav-btn" id="btnTabAuditoria" onclick="mudarAba('abaAuditoria', this)" title="Auditoria"><span class="nav-icon">🧾</span><span class="nav-text">AUDITORIA</span></button>
             <button type="button" class="nav-btn" id="btnTabControle" onclick="mudarAba('abaControle', this)" title="Controle de Mesas"><span class="nav-icon">🔐</span><span class="nav-text">MESAS</span></button>
             <button type="button" class="nav-btn" id="btnTabPresentes" onclick="mudarAba('abaPresentes', this)" title="Presentes"><span class="nav-icon">✅</span><span class="nav-text">PRESENTES</span></button>
             <button type="button" class="nav-btn" id="btnTabHistorico" onclick="mudarAba('abaHistorico', this)" title="Histórico"><span class="nav-icon">🕘</span><span class="nav-text">HISTÓRICO</span></button>
@@ -296,6 +297,14 @@
                 </div>
             </div>
 
+            
+            <div id="abaAuditoria" class="aba">
+                <h2 style="color: #f59e0b;">🧾 AUDITORIA</h2>
+                <div class="table-wrapper" style="border-color: rgba(245,158,11,0.3);">
+                    <table><thead><tr><th>GAIOLA</th><th>ID</th><th>MOTORISTA</th><th>MESA</th><th>HORÁRIO</th></tr></thead><tbody id="tabelaAuditoria"></tbody></table>
+                </div>
+            </div>
+
             <div id="abaHistorico" class="aba">
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:15px;">
                     <h2 style="color:#38bdf8; margin:0;">🕘 HISTÓRICO DE CHAMADAS DO DIA</h2>
@@ -328,24 +337,30 @@
         const db = firebase.database();
         const uAtu = sessionStorage.getItem('usuarioLogado'), lAtu = sessionStorage.getItem('lugarLogado');
 
-        let veiculos = [], regrasFinalFila = [], listaMesas = [], historicoChamadas = [], letrasLiberadas = [];
+        let veiculos = [], regrasFinalFila = [], listaMesas = [], historicoChamadas = [], letrasLiberadas = [], auditoriaRegistros = [];
         let audioFila = [], estaFalando = false, uDataChamada = 0;
 
         if (!uAtu) window.location.href = "index.html";
         document.getElementById('dispUser').innerText = uAtu;
 
-        const bA=document.getElementById('btnTabAdmin'), bC=document.getElementById('btnTabCheckin'), bT=document.getElementById('btnTabTv'), bM=document.getElementById('btnTabMesas'), bR=document.getElementById('btnTabRadar'), bF=document.getElementById('btnTabFinalFila'), bCtrl=document.getElementById('btnTabControle'), bP=document.getElementById('btnTabPresentes'), bH=document.getElementById('btnTabHistorico');
+        const bA=document.getElementById('btnTabAdmin'), bC=document.getElementById('btnTabCheckin'), bT=document.getElementById('btnTabTv'), bM=document.getElementById('btnTabMesas'), bR=document.getElementById('btnTabRadar'), bF=document.getElementById('btnTabFinalFila'), bAud=document.getElementById('btnTabAuditoria'), bCtrl=document.getElementById('btnTabControle'), bP=document.getElementById('btnTabPresentes'), bH=document.getElementById('btnTabHistorico');
 
         db.ref('.info/connected').on('value', s => {
             document.getElementById('txtServidor').innerText = s.val() ? 'ONLINE' : 'CONECTANDO...';
         });
 
         if(lAtu === 'Admin') {
-            [bA, bC, bT, bM, bR, bF, bCtrl, bP, bH].forEach(b => { if(b) b.style.display = 'flex'; });
+            const labelAuditoriaMesaAdmin = document.querySelector('.ff-box label');
+            if(labelAuditoriaMesaAdmin) labelAuditoriaMesaAdmin.innerText = '🚨 FINAL DE FILA (GAIOLA / LETRA)';
+            const botaoAuditoriaMesaAdmin = document.querySelector('.ff-box .btn-padrao');
+            if(botaoAuditoriaMesaAdmin) botaoAuditoriaMesaAdmin.innerText = 'SALVAR REGRA';
+
+            [bA, bC, bT, bM, bR, bF, bAud, bCtrl, bP, bH].forEach(b => { if(b) b.style.display = 'flex'; });
             if(bA) bA.click();
         } else {
             document.body.classList.add('is-mesa-operacao');
-            [bM, bF].forEach(b => { if(b) b.style.display = 'flex'; });
+            [bM, bAud].forEach(b => { if(b) b.style.display = 'flex'; });
+            if(bF) bF.style.display = 'none';
             if(bP) bP.style.display = 'none';
             if(bH) bH.style.display = 'none';
             const controlesPresentesAdmin = document.getElementById('controlesPresentesAdmin');
@@ -354,11 +369,20 @@
             if(abaPresentes) abaPresentes.style.display = 'none';
             const abaHistorico = document.getElementById('abaHistorico');
             if(abaHistorico) abaHistorico.style.display = 'none';
+            const abaFinalFila = document.getElementById('abaFinalFila');
+            if(abaFinalFila) abaFinalFila.style.display = 'none';
             const thAcaoAnalise = document.getElementById('thAcaoAnalise');
             if(thAcaoAnalise) thAcaoAnalise.style.display = 'none';
+            if(bAud) {
+                bAud.title = 'Auditoria';
+                const txt = bAud.querySelector('.nav-text');
+                if(txt) txt.textContent = 'AUDITORIA';
+            }
             if(bM) bM.click();
-            const tituloFinalFila = document.querySelector('#abaFinalFila h2');
-            if(tituloFinalFila) tituloFinalFila.innerText = '🚨 REALIZANDO AUDITORIA';
+            const labelAuditoriaMesa = document.querySelector('.ff-box label');
+            if(labelAuditoriaMesa) labelAuditoriaMesa.innerText = '🧾 AUDITORIA (GAIOLA / LETRA)';
+            const botaoAuditoriaMesa = document.querySelector('.ff-box .btn-padrao');
+            if(botaoAuditoriaMesa) botaoAuditoriaMesa.innerText = 'SALVAR AUDITORIA';
             let dNome = document.getElementById('displayNomeMesaGrande');
             if(dNome && lAtu) dNome.innerText = lAtu.toUpperCase();
 
@@ -378,6 +402,7 @@
         db.ref('regrasFinalFila').on('value', s => { regrasFinalFila = s.val() || []; renderizarTelas(); });
         db.ref('mesasOcupadas').on('value', s => { listaMesas = s.val() || []; renderizarControleMesas(); });
         db.ref('historicoChamadas').on('value', s => { historicoChamadas = s.val() || []; renderizarHistoricoChamadas(); });
+        db.ref('auditoriaRegistros').on('value', s => { auditoriaRegistros = s.val() || []; renderizarAuditoria(); });
         db.ref('letrasLiberadas').on('value', s => {
             letrasLiberadas = s.val() || [];
             const input = document.getElementById('inputLetrasLiberadas');
@@ -641,6 +666,13 @@
             let valor = document.getElementById('inputFinalFila').value.trim().toUpperCase();
             if(!valor) return;
 
+            if(lAtu !== 'Admin') {
+                registrarAuditoriaManualPorMesa();
+                document.getElementById('inputFinalFila').value = '';
+                alert("Auditoria registrada com sucesso.");
+                return;
+            }
+
             let vt = [...veiculos];
             let atualizouVeiculo = false;
 
@@ -659,9 +691,9 @@
             if(!f.includes(valor)) {
                 f.push(valor);
                 db.ref('regrasFinalFila').set(f);
-                alert("Regra de auditoria salva.");
+                alert("Regra de final de fila salva.");
             } else {
-                alert("Esta regra de auditoria já está ativa.");
+                alert("Esta regra já está ativa.");
             }
 
             document.getElementById('inputFinalFila').value = '';
@@ -831,6 +863,53 @@
             });
         }
 
+
+        function renderizarAuditoria() {
+            const t = document.getElementById('tabelaAuditoria');
+            if(!t) return;
+            t.innerHTML = '';
+            if(!auditoriaRegistros.length) {
+                t.innerHTML = `<tr><td colspan="5" align="center" style="color:#64748b;">SEM REGISTROS DE AUDITORIA.</td></tr>`;
+                return;
+            }
+            auditoriaRegistros.forEach(r => {
+                t.innerHTML += `<tr>
+                    <td>${r.gaiola || '-'}</td>
+                    <td>${r.id || '-'}</td>
+                    <td>${r.nome || '-'}</td>
+                    <td>${r.mesa || '-'}</td>
+                    <td>${r.data ? new Date(r.data).toLocaleTimeString() : '-'}</td>
+                </tr>`;
+            });
+        }
+
+        function registrarAuditoriaManualPorMesa() {
+            const valor = document.getElementById('inputFinalFila').value.trim().toUpperCase();
+            if(!valor) return;
+            let candidatos = veiculos.filter(v => v.gaiola === valor || extrairLetra(v.gaiola) === valor);
+            const listaAtual = [...auditoriaRegistros];
+            if(!candidatos.length) {
+                listaAtual.unshift({
+                    gaiola: valor,
+                    id: '',
+                    nome: 'REGISTRO MANUAL DE AUDITORIA',
+                    mesa: lAtu,
+                    data: Date.now()
+                });
+            } else {
+                candidatos.forEach(v => {
+                    listaAtual.unshift({
+                        gaiola: v.gaiola,
+                        id: v.id,
+                        nome: v.nome,
+                        mesa: lAtu,
+                        data: Date.now()
+                    });
+                });
+            }
+            db.ref('auditoriaRegistros').set(listaAtual.slice(0, 500));
+        }
+
         function renderizarTelas() {
             const tD = document.getElementById('tabelaDashboard'), tA = document.querySelector('#tabelaAguardandoMesa tbody'),
                   tM = document.getElementById('tabelaMinhaMesa'), tF = document.getElementById('tabelaFinalFilaAdmin');
@@ -928,6 +1007,7 @@
 
             renderizarPresentes();
             renderizarHistoricoChamadas();
+            renderizarAuditoria();
         }
 
         document.getElementById('coletor')?.addEventListener('keypress', function(e) {
