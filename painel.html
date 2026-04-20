@@ -141,7 +141,7 @@
             <button type="button" class="nav-btn" id="btnTabTv" onclick="mudarAba('abaTv', this)" title="Monitor TV"><span class="nav-icon">📺</span><span class="nav-text">MONITOR TV</span></button>
             <button type="button" class="nav-btn" id="btnTabMesas" onclick="mudarAba('abaMesas', this)" title="Atendimento"><span class="nav-icon">🎯</span><span class="nav-text">ATENDIMENTO</span></button>
             <button type="button" class="nav-btn" id="btnTabRadar" onclick="mudarAba('abaRadar', this)" title="Radar Global"><span class="nav-icon">🌍</span><span class="nav-text">RADAR GLOBAL</span></button>
-            <button type="button" class="nav-btn" id="btnTabFinalFila" onclick="mudarAba('abaFinalFila', this)" title="Realizando Auditoria"><span class="nav-icon">🚨</span><span class="nav-text">AUDITORIA</span></button>
+            <button type="button" class="nav-btn" id="btnTabFinalFila" onclick="mudarAba('abaFinalFila', this)" title="Final de Fila"><span class="nav-icon">🚨</span><span class="nav-text">FINAL DE FILA</span></button>
             <button type="button" class="nav-btn" id="btnTabControle" onclick="mudarAba('abaControle', this)" title="Controle de Mesas"><span class="nav-icon">🔐</span><span class="nav-text">MESAS</span></button>
             <button type="button" class="nav-btn" id="btnTabPresentes" onclick="mudarAba('abaPresentes', this)" title="Presentes"><span class="nav-icon">✅</span><span class="nav-text">PRESENTES</span></button>
             <button type="button" class="nav-btn" id="btnTabHistorico" onclick="mudarAba('abaHistorico', this)" title="Histórico"><span class="nav-icon">🕘</span><span class="nav-text">HISTÓRICO</span></button>
@@ -235,7 +235,7 @@
             <div id="abaTv" class="aba" style="padding: 0;">
                 <div class="tv-layout">
                     <div class="tv-historico">
-                        <h3 style="color:#10b981; border-bottom:1px dashed rgba(16, 185, 129, 0.5); padding-bottom:10px; text-align:center;">🟢 EM ATENDIMENTO</h3>
+                        <h3 style="color:#10b981; border-bottom:1px dashed rgba(16, 185, 129, 0.5); padding-bottom:10px; text-align:center;">🟢 ÚLTIMOS 5 CHAMADOS</h3>
                         <div id="tvEmAtendimentoLista" style="overflow-y: auto; flex-grow: 1;"></div>
                     </div>
 
@@ -264,7 +264,7 @@
             </div>
 
             <div id="abaFinalFila" class="aba">
-                <h2 style="color: #ef4444;">🚨 REALIZANDO AUDITORIA</h2>
+                <h2 style="color: #ef4444;">🚨 GESTÃO: FINAL DE FILA</h2>
                 <div class="table-wrapper" style="border-color: rgba(239,68,68,0.3);">
                     <table><thead><tr><th>GAIOLA / MOTORISTA</th><th>CHECK-IN</th><th align="right">AÇÃO</th></tr></thead><tbody id="tabelaFinalFilaAdmin"></tbody></table>
                 </div>
@@ -297,7 +297,10 @@
             </div>
 
             <div id="abaHistorico" class="aba">
-                <h2 style="color:#38bdf8;">🕘 HISTÓRICO DE CHAMADAS DO DIA</h2>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:15px;">
+                    <h2 style="color:#38bdf8; margin:0;">🕘 HISTÓRICO DE CHAMADAS DO DIA</h2>
+                    <button type="button" class="btn-padrao btn-acao" onclick="exportarHistoricoDia()">EXPORTAR RELATÓRIO DO DIA</button>
+                </div>
                 <div class="table-wrapper">
                     <table>
                         <thead><tr><th>HORÁRIO CHAMADA</th><th>HORÁRIO CHEGADA</th><th>TEMPO ESPERA</th><th>GAIOLA</th><th>MOTORISTA</th><th>ID</th><th>MESA</th></tr></thead>
@@ -342,12 +345,20 @@
             if(bA) bA.click();
         } else {
             document.body.classList.add('is-mesa-operacao');
-            [bM, bF, bP, bH].forEach(b => { if(b) b.style.display = 'flex'; });
+            [bM, bF].forEach(b => { if(b) b.style.display = 'flex'; });
+            if(bP) bP.style.display = 'none';
+            if(bH) bH.style.display = 'none';
             const controlesPresentesAdmin = document.getElementById('controlesPresentesAdmin');
             if(controlesPresentesAdmin) controlesPresentesAdmin.style.display = 'none';
+            const abaPresentes = document.getElementById('abaPresentes');
+            if(abaPresentes) abaPresentes.style.display = 'none';
+            const abaHistorico = document.getElementById('abaHistorico');
+            if(abaHistorico) abaHistorico.style.display = 'none';
             const thAcaoAnalise = document.getElementById('thAcaoAnalise');
             if(thAcaoAnalise) thAcaoAnalise.style.display = 'none';
             if(bM) bM.click();
+            const tituloFinalFila = document.querySelector('#abaFinalFila h2');
+            if(tituloFinalFila) tituloFinalFila.innerText = '🚨 REALIZANDO AUDITORIA';
             let dNome = document.getElementById('displayNomeMesaGrande');
             if(dNome && lAtu) dNome.innerText = lAtu.toUpperCase();
 
@@ -866,7 +877,7 @@
 
                 if(v.status === 'EM_ATENDIMENTO' && v.mesaResponsavel === lAtu && tM) {
                     const acaoAnalise = (lAtu === 'Admin')
-                        ? `<button type="button" class="btn-padrao" style="border-color:#f59e0b; color:#f59e0b;" onclick="penalizarVeiculo('${v.id}')" title="Enviar para Auditoria">RETIDO</button>`
+                        ? `<button type="button" class="btn-padrao" style="border-color:#f59e0b; color:#f59e0b;" onclick="penalizarVeiculo('${v.id}')" title="Enviar para Final de Fila">RETIDO</button>`
                         : '';
                     tM.innerHTML += `<tr>
                         <td>${v.gaiola}</td>
@@ -903,16 +914,16 @@
             });
 
             if(lAtendTV) {
-                let atendTV = veiculos.filter(v => v.status === 'EM_ATENDIMENTO').sort((a, b) => b.horaChamada - a.horaChamada).slice(0, 14);
+                let ultimosChamados = historicoChamadas.slice(0, 5);
                 let hAtend = '';
-                atendTV.forEach(v => {
+                ultimosChamados.forEach(v => {
                     hAtend += `<div class="hist-item-tv atend">
-                                  <span class="hist-rota-tv" style="color:#10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">${v.gaiola}</span>
-                                  <span class="hist-nome-tv" style="font-size:11px;">${v.nome}</span>
-                                  <span style="color:#10b981; font-size:26px; font-weight:bold; display:block; margin-top:5px; letter-spacing:1px; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">${(v.mesaResponsavel || '').toUpperCase()}</span>
+                                  <span class="hist-rota-tv" style="color:#10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">${v.gaiola || '-'}</span>
+                                  <span class="hist-nome-tv" style="font-size:11px;">${v.nome || '-'}</span>
+                                  <span style="color:#10b981; font-size:26px; font-weight:bold; display:block; margin-top:5px; letter-spacing:1px; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">${(v.mesa || '').toUpperCase()}</span>
                                </div>`;
                 });
-                lAtendTV.innerHTML = hAtend || '<center style="color:#4a5568; margin-top:20px;">NENHUM EM ATENDIMENTO</center>';
+                lAtendTV.innerHTML = hAtend || '<center style="color:#4a5568; margin-top:20px;">NENHUM CHAMADO</center>';
             }
 
             renderizarPresentes();
@@ -960,6 +971,35 @@
                 }
             }
         });
+
+
+        window.exportarHistoricoDia = function() {
+            if(!historicoChamadas.length) return alert("Não há histórico para exportar.");
+            const linhas = [["HORARIO_CHAMADA","HORARIO_CHEGADA","TEMPO_ESPERA","GAIOLA","MOTORISTA","ID","MESA"]];
+            historicoChamadas.forEach(h => {
+                linhas.push([
+                    h.data ? new Date(h.data).toLocaleTimeString() : '',
+                    h.chegada ? new Date(h.chegada).toLocaleTimeString() : '',
+                    h.tempoEsperaMs ? formatarTempoLive(h.tempoEsperaMs) : '',
+                    h.gaiola || '',
+                    h.nome || '',
+                    h.id || '',
+                    h.mesa || ''
+                ]);
+            });
+            const csv = linhas.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
+            const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+            const a = document.createElement('a');
+            const dataNome = new Date().toISOString().slice(0,10);
+            a.href = URL.createObjectURL(blob);
+            a.download = `historico_do_dia_${dataNome}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                URL.revokeObjectURL(a.href);
+                a.remove();
+            }, 1000);
+        };
 
         setInterval(renderizarTelas, 1000);
         window.ativarVozTV = function() { document.getElementById('btnAtivarVoz').style.display = 'none'; window.speechSynthesis.speak(new SpeechSynthesisUtterance("")); };
