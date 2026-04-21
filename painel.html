@@ -500,9 +500,7 @@
             }
 
             const gaiola = normalizarTexto(veiculo.gaiola);
-            const letra = extrairLetra(gaiola);
-
-            return regrasFinalFila.includes(gaiola) || regrasFinalFila.includes(letra);
+            return regrasFinalFila.includes(gaiola);
         }
 
         function criarVeiculoBase(gaiola, id, nome, manualNoShow=false) {
@@ -733,8 +731,7 @@
             let atualizouVeiculo = false;
 
             vt.forEach(x => {
-                const letra = extrairLetra(x.gaiola);
-                if((x.gaiola === valor || letra === valor) && x.status === 'AGUARDANDO') {
+                if (x.gaiola === valor && x.status === 'AGUARDANDO') {
                     x.status = 'FINAL_FILA';
                     x.chegada = Date.now();
                     atualizouVeiculo = true;
@@ -829,8 +826,11 @@
                     v.prioridadeNoShow = true;
                     db.ref('veiculos').set(vt);
                     let f = [...regrasFinalFila];
-                    let letra = extrairLetra(v.gaiola);
-                    if(!f.includes(letra)) { f.push(letra); db.ref('regrasFinalFila').set(f); }
+                    let gaiola = normalizarTexto(v.gaiola);
+                    if(!f.includes(gaiola)) {
+                        f.push(gaiola);
+                        db.ref('regrasFinalFila').set(f);
+                    }
                 }
             }
         };
