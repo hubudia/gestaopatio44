@@ -63,8 +63,8 @@
 
         .mesas-grid { display: grid; grid-template-columns: 1.5fr 1fr; grid-template-rows: 1fr 320px; gap: 20px; flex-grow: 1; min-height: 0; margin-top: 10px; }
         .card-radar { grid-column: 1 / 2; grid-row: 1 / 3; display: flex; flex-direction: column; min-height: 0; }
-        .card-decor { grid-column: 2 / 3; grid-row: 1 / 2; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #1e293b; border-radius: 8px; color: #cbd5e1; text-align: center; padding: 20px; min-height: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .card-analise { grid-column: 2 / 3; grid-row: 2 / 3; display: flex; flex-direction: column; background: transparent; min-height: 0; }
+        .card-decor { grid-column: 2 / 3; grid-row: 1 / 2; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 14px; background: #1e293b; border-radius: 8px; color: #cbd5e1; text-align: center; padding: 20px; min-height: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; }
+        .card-analise { grid-column: 2 / 3; grid-row: 2 / 3; display: flex; flex-direction: column; background: transparent; min-height: 0; margin-top: 0; }
 
         .is-mesa-operacao #tabelaAguardandoMesa .rota-text { font-size: 24px !important; color: #fff !important; font-weight: bold; }
         .is-mesa-operacao #tabelaAguardandoMesa .nome-text { font-size: 16px !important; color: #cbd5e1 !important; }
@@ -123,6 +123,20 @@
         .chip-ausente { background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.4);}
         .chip-chamado { background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.4);}
         .chip-retido { background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.4);}
+    
+        .segunda-chamada-box { width:100%; padding:12px; border:1px solid rgba(56,189,248,0.35); border-radius:8px; background: rgba(56,189,248,0.05); box-sizing:border-box; }
+        .segunda-chamada-box label { font-size:11px; color:#38bdf8; font-weight:bold; letter-spacing:1px; display:block; margin-bottom:8px; }
+        .segunda-chamada-box p { font-size:11px; color:#94a3b8; margin:0; line-height:1.4; }
+
+        .check-wrap { display:inline-flex; justify-content:center; align-items:center; cursor:pointer; user-select:none; width:24px; height:24px; position:relative; }
+        .check-wrap input { position:absolute; inset:0; opacity:0; cursor:pointer; margin:0; width:24px; height:24px; z-index:2; }
+        .check-wrap span { width:20px; height:20px; border:2px solid #64748b; border-radius:5px; display:inline-block; transition:all 0.2s ease; background:#020617; pointer-events:none; }
+        .check-wrap input:checked + span { background:#10b981; border-color:#10b981; box-shadow:0 0 10px rgba(16,185,129,0.45); }
+
+        .input-novo-id { padding:12px !important; border-radius:8px !important; border:1px solid #334155 !important; background:#0f172a !important; color:#f1f5f9 !important; font-size:14px !important; width:100% !important; min-width:180px; box-sizing:border-box !important; pointer-events:auto !important; user-select:text !important; }
+        .input-novo-id:focus { border-color:#38bdf8 !important; box-shadow:0 0 0 1px rgba(56,189,248,0.3) !important; outline:none !important; }
+        .linha-noshow-ativa { opacity:0.6; }
+
     </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -227,17 +241,17 @@
                         <div class="table-wrapper"><table id="tabelaAguardandoMesa"><thead><tr><th>GAIOLA / MOTORISTA</th><th>ESPERA</th><th>AÇÃO</th></tr></thead><tbody></tbody></table></div>
                     </div>
                     <div class="card-decor">
-                        <div style="font-size: 25px; color: #38bdf8;">🖥️</div>
+                        <div style="font-size: 35px; color: #38bdf8;">🖥️</div>
                         <h3 id="displayNomeMesaGrande">MESA</h3>
                         <div class="ff-box">
                             <label>🚨 REALIZAR AUDITORIA (GAIOLA / LETRA)</label>
                             <input type="text" id="inputFinalFila" placeholder="DIGITAR GAIOLA OU LETRA..." oninput="this.value = this.value.toUpperCase()" onkeypress="if(event.key === 'Enter') { event.preventDefault(); addRotaFinalFila(); }">
                             <button type="button" class="btn-padrao btn-critico" onclick="addRotaFinalFila()">SALVAR AUDITORIA</button>
                         </div>
-                    </div>
-                    <div style="margin-top:15px; width:100%; padding:12px; border:1px solid rgba(56,189,248,0.4); border-radius:8px; background: rgba(56,189,248,0.05);">
-                        <label style="font-size:11px; color:#38bdf8; font-weight:bold; letter-spacing:1px; display:block; margin-bottom:8px;">🔊 SEGUNDA CHAMADA</label>
-                        <p style="font-size:11px; color:#94a3b8; margin:0;">Use o botão "2ª CHAMADA" na lista <b>EM ANÁLISE</b> para anunciar novamente o motorista.</p>
+                        <div class="segunda-chamada-box">
+                            <label>🔊 SEGUNDA CHAMADA</label>
+                            <p>Use o botão "2ª CHAMADA" na lista <b>EM ANÁLISE</b> para anunciar novamente o motorista.</p>
+                        </div>
                     </div>
                     <div class="card-analise">
                         <h3 style="color: #10b981;">🟢 EM ANÁLISE</h3>
@@ -381,6 +395,8 @@
             if(labelAuditoriaMesaAdmin) labelAuditoriaMesaAdmin.innerText = '🚨 FINAL DE FILA (GAIOLA / LETRA)';
             const botaoAuditoriaMesaAdmin = document.querySelector('.ff-box .btn-padrao');
             if(botaoAuditoriaMesaAdmin) botaoAuditoriaMesaAdmin.innerText = 'SALVAR REGRA';
+            const inputFinalFilaAdmin = document.getElementById('inputFinalFila');
+            if(inputFinalFilaAdmin) inputFinalFilaAdmin.placeholder = 'DIGITAR GAIOLA OU LETRA...';
 
             [bA, bC, bT, bM, bR, bF, bAud, bCtrl, bP, bN, bH].forEach(b => { if(b) b.style.display = 'flex'; });
             if(bA) bA.click();
@@ -425,6 +441,8 @@
             if(labelAuditoriaMesa) labelAuditoriaMesa.innerText = '🧾 AUDITORIA (GAIOLA / LETRA)';
             const botaoAuditoriaMesa = document.querySelector('.ff-box .btn-padrao');
             if(botaoAuditoriaMesa) botaoAuditoriaMesa.innerText = 'SALVAR AUDITORIA';
+            const inputFinalFilaMesa = document.getElementById('inputFinalFila');
+            if(inputFinalFilaMesa) inputFinalFilaMesa.placeholder = 'DIGITAR GAIOLA OU LETRA...';
             let dNome = document.getElementById('displayNomeMesaGrande');
             if(dNome && lAtu) dNome.innerText = lAtu.toUpperCase();
 
@@ -439,7 +457,7 @@
             });
         }
 
-        db.ref('veiculos').on('value', s => { veiculos = s.val() || []; renderizarTelas(); });
+        db.ref('veiculos').on('value', s => { veiculos = s.val() || []; renderizarTelas(); renderizarNoShow(); });
         db.ref('regrasFinalFila').on('value', s => { regrasFinalFila = s.val() || []; renderizarTelas(); });
         db.ref('mesasOcupadas').on('value', s => { listaMesas = s.val() || []; renderizarControleMesas(); });
         db.ref('historicoChamadas').on('value', s => { historicoChamadas = s.val() || []; renderizarHistoricoChamadas(); });
@@ -875,6 +893,7 @@
             }
 
             db.ref('veiculos').set(vt);
+            renderizarNoShow();
             alert('Configuração de NoShow salva.');
         };
 
@@ -899,18 +918,27 @@
                     <td>${v.nome || '-'}</td>
                     <td>${v.id || '-'}</td>
                     <td align="center">
-                        <label class="check-wrap">
+                        <label class="check-wrap" for="noshow_${v.id}">
                             <input type="checkbox" id="noshow_${v.id}" ${v.noShowConfirmado ? 'checked' : ''}>
                             <span></span>
                         </label>
                     </td>
                     <td align="center">
-                        <label class="check-wrap">
+                        <label class="check-wrap" for="repassada_${v.id}">
                             <input type="checkbox" id="repassada_${v.id}" ${v.rotaRepassada ? 'checked' : ''}>
                             <span></span>
                         </label>
                     </td>
-                    <td><input type="text" class="input-novo-id" id="novoId_${v.id}" value="${v.idNovoMotorista || ''}" placeholder="ID NOVO MOTORISTA"></td>
+                    <td>
+                        <input
+                            type="text"
+                            class="input-novo-id"
+                            id="novoId_${v.id}"
+                            value="${v.idNovoMotorista || ''}"
+                            placeholder="ID NOVO MOTORISTA"
+                            autocomplete="off"
+                            spellcheck="false">
+                    </td>
                     <td align="right"><button type="button" class="btn-padrao btn-acao" onclick="salvarNoShowConfig('${v.id}')">SALVAR</button></td>
                 </tr>`;
             });
@@ -1161,7 +1189,6 @@
 
             renderizarPresentes();
             renderizarHistoricoChamadas();
-            renderizarNoShow();
             renderizarAuditoria();
         }
 
