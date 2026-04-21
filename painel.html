@@ -1168,12 +1168,17 @@
             });
 
             if(lAtendTV) {
-                let ultimosChamados = historicoChamadas.slice(0, 5);
+                let ultimosChamados = historicoChamadas
+                    .filter(h => h.evento !== 'NOSHOW')
+                    .filter(h => h.mesa && h.mesa !== 'NOSHOW')
+                    .slice(0, 5);
+
                 let hAtend = '';
                 ultimosChamados.forEach(v => {
+                    const nomePainel = v.noShowRepassado ? 'NOSHOW' : (v.nome || '-');
                     hAtend += `<div class="hist-item-tv atend">
                                   <span class="hist-rota-tv" style="color:#10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">${v.gaiola || '-'}</span>
-                                  <span class="hist-nome-tv" style="font-size:11px;">${v.nome || '-'}</span>
+                                  <span class="hist-nome-tv" style="font-size:11px;">${nomePainel}</span>
                                   <span style="color:#10b981; font-size:26px; font-weight:bold; display:block; margin-top:5px; letter-spacing:1px; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">${(v.mesa || '').toUpperCase()}</span>
                                </div>`;
                 });
