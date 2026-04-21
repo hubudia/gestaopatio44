@@ -82,6 +82,11 @@
             optionAdmin.text = '🔧 ACESSO ADMIN';
             selectLugar.appendChild(optionAdmin);
 
+            let optionPainel = document.createElement('option');
+            optionPainel.value = 'Painel';
+            optionPainel.text = '📺 PAINEL';
+            selectLugar.appendChild(optionPainel);
+
             let temMesaLivre = false;
             for(let i = 1; i <= TOTAL_DE_MESAS; i++) {
                 let nomeMesa = 'Mesa ' + i;
@@ -113,6 +118,15 @@
                     logarComo('ADMIN', 'admin', 'Admin');
                 } else {
                     alert("Acesso Negado: Senha de Administrador incorreta!");
+                }
+                return;
+            }
+
+            if(lugar === 'Painel') {
+                if(s === 'Seagroup.com') {
+                    logarComo('PAINEL', 'painel', 'Painel');
+                } else {
+                    alert("Acesso Negado: Senha do Painel incorreta!");
                 }
                 return;
             }
