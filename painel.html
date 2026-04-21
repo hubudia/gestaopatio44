@@ -145,6 +145,7 @@
             <button type="button" class="nav-btn" id="btnTabAuditoria" onclick="mudarAba('abaAuditoria', this)" title="Auditoria"><span class="nav-icon">🧾</span><span class="nav-text">AUDITORIA</span></button>
             <button type="button" class="nav-btn" id="btnTabControle" onclick="mudarAba('abaControle', this)" title="Controle de Mesas"><span class="nav-icon">🔐</span><span class="nav-text">MESAS</span></button>
             <button type="button" class="nav-btn" id="btnTabPresentes" onclick="mudarAba('abaPresentes', this)" title="Presentes"><span class="nav-icon">✅</span><span class="nav-text">PRESENTES</span></button>
+            <button type="button" class="nav-btn" id="btnTabNoShow" onclick="mudarAba('abaNoShow', this)" title="NoShow"><span class="nav-icon">🚫</span><span class="nav-text">NOSHOW</span></button>
             <button type="button" class="nav-btn" id="btnTabHistorico" onclick="mudarAba('abaHistorico', this)" title="Histórico"><span class="nav-icon">🕘</span><span class="nav-text">HISTÓRICO</span></button>
         </div>
 
@@ -226,6 +227,10 @@
                             <button type="button" class="btn-padrao btn-critico" style="width:100%; margin-top:10px;" onclick="addRotaFinalFila()">SALVAR AUDITORIA</button>
                         </div>
                     </div>
+                    <div style="margin-top:15px; width:100%; padding:12px; border:1px solid rgba(56,189,248,0.4); border-radius:8px; background: rgba(56,189,248,0.05);">
+                        <label style="font-size:11px; color:#38bdf8; font-weight:bold; letter-spacing:1px; display:block; margin-bottom:8px;">🔊 SEGUNDA CHAMADA</label>
+                        <p style="font-size:11px; color:#94a3b8; margin:0;">Use o botão "2ª CHAMADA" na lista <b>EM ANÁLISE</b> para anunciar novamente o motorista.</p>
+                    </div>
                     <div class="card-analise">
                         <h3 style="color: #10b981;">🟢 EM ANÁLISE</h3>
                         <div class="table-wrapper"><table><thead><tr><th>GAIOLA</th><th>TEMPO</th><th align="right" id="thAcaoAnalise">AÇÃO</th></tr></thead><tbody id="tabelaMinhaMesa"></tbody></table></div>
@@ -298,6 +303,17 @@
             </div>
 
             
+            <div id="abaNoShow" class="aba">
+                <h2 style="color:#f59e0b;">🚫 NOSHOW</h2>
+                <p style="color:#94a3b8; font-size:14px; margin-bottom: 10px;">Lista apenas os motoristas ausentes. Marque <b>NoShow</b> quando não virá, <b>Rota Repassada</b> quando já encontrou substituto, e informe o <b>ID do novo motorista</b> para dar prioridade automática no check-in.</p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>GAIOLA</th><th>MOTORISTA</th><th>ID</th><th>NOSHOW</th><th>ROTA REPASSADA</th><th>ID NOVO MOTORISTA</th><th>AÇÃO</th></tr></thead>
+                        <tbody id="tabelaNoShow"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <div id="abaAuditoria" class="aba">
                 <h2 style="color: #f59e0b;">🧾 AUDITORIA</h2>
                 <div class="table-wrapper" style="border-color: rgba(245,158,11,0.3);">
@@ -309,6 +325,9 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:15px;">
                     <h2 style="color:#38bdf8; margin:0;">🕘 HISTÓRICO DE CHAMADAS DO DIA</h2>
                     <button type="button" class="btn-padrao btn-acao" onclick="exportarHistoricoDia()">EXPORTAR RELATÓRIO DO DIA</button>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr; gap:15px; margin-bottom:15px;">
+                    <input type="text" id="buscaHistoricoMotorista" placeholder="BUSCAR MOTORISTA NO HISTÓRICO..." oninput="renderizarHistoricoChamadas()">
                 </div>
                 <div class="table-wrapper">
                     <table>
@@ -343,7 +362,7 @@
         if (!uAtu) window.location.href = "index.html";
         document.getElementById('dispUser').innerText = uAtu;
 
-        const bA=document.getElementById('btnTabAdmin'), bC=document.getElementById('btnTabCheckin'), bT=document.getElementById('btnTabTv'), bM=document.getElementById('btnTabMesas'), bR=document.getElementById('btnTabRadar'), bF=document.getElementById('btnTabFinalFila'), bAud=document.getElementById('btnTabAuditoria'), bCtrl=document.getElementById('btnTabControle'), bP=document.getElementById('btnTabPresentes'), bH=document.getElementById('btnTabHistorico');
+        const bA=document.getElementById('btnTabAdmin'), bC=document.getElementById('btnTabCheckin'), bT=document.getElementById('btnTabTv'), bM=document.getElementById('btnTabMesas'), bR=document.getElementById('btnTabRadar'), bF=document.getElementById('btnTabFinalFila'), bAud=document.getElementById('btnTabAuditoria'), bCtrl=document.getElementById('btnTabControle'), bP=document.getElementById('btnTabPresentes'), bN=document.getElementById('btnTabNoShow'), bH=document.getElementById('btnTabHistorico');
 
         db.ref('.info/connected').on('value', s => {
             document.getElementById('txtServidor').innerText = s.val() ? 'ONLINE' : 'CONECTANDO...';
@@ -355,12 +374,12 @@
             const botaoAuditoriaMesaAdmin = document.querySelector('.ff-box .btn-padrao');
             if(botaoAuditoriaMesaAdmin) botaoAuditoriaMesaAdmin.innerText = 'SALVAR REGRA';
 
-            [bA, bC, bT, bM, bR, bF, bAud, bCtrl, bP, bH].forEach(b => { if(b) b.style.display = 'flex'; });
+            [bA, bC, bT, bM, bR, bF, bAud, bCtrl, bP, bN, bH].forEach(b => { if(b) b.style.display = 'flex'; });
             if(bA) bA.click();
         } else if(roleAtu === 'painel' || lAtu === 'Painel') {
             [bC, bT].forEach(b => { if(b) b.style.display = 'flex'; });
             if(bA) bA.remove(); if(bM) bM.remove(); if(bR) bR.remove(); if(bF) bF.remove();
-            if(bAud) bAud.remove(); if(bCtrl) bCtrl.remove(); if(bP) bP.remove(); if(bH) bH.remove();
+            if(bAud) bAud.remove(); if(bCtrl) bCtrl.remove(); if(bP) bP.remove(); if(bN) bN.remove(); if(bH) bH.remove();
             const abaAdmin = document.getElementById('abaAdmin'); if(abaAdmin) abaAdmin.remove();
             const abaMesas = document.getElementById('abaMesas'); if(abaMesas) abaMesas.remove();
             const abaRadar = document.getElementById('abaRadar'); if(abaRadar) abaRadar.remove();
@@ -368,6 +387,7 @@
             const abaAuditoria = document.getElementById('abaAuditoria'); if(abaAuditoria) abaAuditoria.remove();
             const abaControle = document.getElementById('abaControle'); if(abaControle) abaControle.remove();
             const abaPresentes = document.getElementById('abaPresentes'); if(abaPresentes) abaPresentes.remove();
+            const abaNoShow = document.getElementById('abaNoShow'); if(abaNoShow) abaNoShow.remove();
             const abaHistorico = document.getElementById('abaHistorico'); if(abaHistorico) abaHistorico.remove();
             if(bC) bC.click();
         } else {
@@ -375,17 +395,19 @@
             [bM, bAud].forEach(b => { if(b) b.style.display = 'flex'; });
             if(bF) bF.style.display = 'none';
             if(bP) bP.style.display = 'none';
+            if(bN) bN.style.display = 'none';
             if(bH) bH.style.display = 'none';
             const controlesPresentesAdmin = document.getElementById('controlesPresentesAdmin');
             if(controlesPresentesAdmin) controlesPresentesAdmin.style.display = 'none';
             const abaPresentes = document.getElementById('abaPresentes');
             if(abaPresentes) abaPresentes.style.display = 'none';
+            const abaNoShow = document.getElementById('abaNoShow');
+            if(abaNoShow) abaNoShow.style.display = 'none';
             const abaHistorico = document.getElementById('abaHistorico');
             if(abaHistorico) abaHistorico.style.display = 'none';
             const abaFinalFila = document.getElementById('abaFinalFila');
             if(abaFinalFila) abaFinalFila.style.display = 'none';
-            const thAcaoAnalise = document.getElementById('thAcaoAnalise');
-            if(thAcaoAnalise) thAcaoAnalise.style.display = 'none';
+            
             if(bAud) {
                 bAud.title = 'Auditoria';
                 const txt = bAud.querySelector('.nav-text');
@@ -736,6 +758,21 @@
             db.ref('historicoChamadas').set(h.slice(0, 500));
         }
 
+        function salvarHistoricoNoShow(v) {
+            const h = [...historicoChamadas];
+            h.unshift({
+                id: v.id,
+                gaiola: v.gaiola,
+                nome: v.nome,
+                mesa: 'NOSHOW',
+                data: Date.now(),
+                chegada: v.chegada || null,
+                tempoEsperaMs: v.chegada ? (Date.now() - v.chegada) : null,
+                evento: 'NOSHOW'
+            });
+            db.ref('historicoChamadas').set(h.slice(0, 500));
+        }
+
         window.chamarVeiculo = function(id) {
             let vt = [...veiculos];
             vt.forEach(x => {
@@ -794,12 +831,74 @@
             if(mudou) db.ref('veiculos').set(vt);
         };
 
+
+        window.salvarNoShowConfig = function(id) {
+            let vt = [...veiculos];
+            let v = vt.find(x => x.id === id);
+            if(!v) return;
+
+            const chkNoShow = document.getElementById(`noshow_${id}`);
+            const chkRepassada = document.getElementById(`repassada_${id}`);
+            const inpNovo = document.getElementById(`novoId_${id}`);
+
+            const noShowMarcado = !!chkNoShow?.checked;
+            const rotaRepassada = !!chkRepassada?.checked;
+            const idNovoMotorista = String(inpNovo?.value || '').trim().toUpperCase();
+
+            const estavaNoShow = !!v.noShowConfirmado;
+
+            v.noShowConfirmado = noShowMarcado;
+            v.rotaRepassada = rotaRepassada;
+            v.idNovoMotorista = idNovoMotorista;
+
+            if(noShowMarcado && !estavaNoShow) {
+                salvarHistoricoNoShow(v);
+            }
+
+            db.ref('veiculos').set(vt);
+            alert('Configuração de NoShow salva.');
+        };
+
+        function renderizarNoShow() {
+            const t = document.getElementById('tabelaNoShow');
+            if(!t) return;
+            t.innerHTML = '';
+
+            const ausentes = veiculos
+                .filter(v => statusPresenca(v).txt === 'AUSENTE')
+                .sort((a,b) => (a.gaiola || '').localeCompare(b.gaiola || ''));
+
+            if(!ausentes.length) {
+                t.innerHTML = `<tr><td colspan="7" align="center" style="color:#64748b;">NENHUM MOTORISTA AUSENTE.</td></tr>`;
+                return;
+            }
+
+            ausentes.forEach(v => {
+                t.innerHTML += `<tr>
+                    <td>${v.gaiola || '-'}</td>
+                    <td>${v.nome || '-'}</td>
+                    <td>${v.id || '-'}</td>
+                    <td align="center"><input type="checkbox" id="noshow_${v.id}" ${v.noShowConfirmado ? 'checked' : ''} style="transform:scale(1.2); width:auto;"></td>
+                    <td align="center"><input type="checkbox" id="repassada_${v.id}" ${v.rotaRepassada ? 'checked' : ''} style="transform:scale(1.2); width:auto;"></td>
+                    <td><input type="text" id="novoId_${v.id}" value="${v.idNovoMotorista || ''}" placeholder="ID NOVO MOTORISTA" style="padding:10px; font-size:14px;"></td>
+                    <td align="right"><button type="button" class="btn-padrao btn-acao" onclick="salvarNoShowConfig('${v.id}')">SALVAR</button></td>
+                </tr>`;
+            });
+        }
+
+        window.segundaChamada = function(id) {
+            const v = veiculos.find(x => x.id === id);
+            if(!v) return;
+            db.ref('tvComando').set({ id: v.id, gaiola: v.gaiola, nome: v.nome, mesa: lAtu, data: Date.now(), segundaChamada: true });
+        };
+
         window.limparDados = function() {
             if(confirm("ATENÇÃO: Isso apagará TODOS os dados, histórico e check-ins do dia. Deseja continuar?")) {
                 db.ref('veiculos').set(null);
                 db.ref('regrasFinalFila').set(null);
                 db.ref('tvComando').set(null);
                 db.ref('historicoChamadas').set(null);
+                db.ref('auditoriaRegistros').set(null);
                 db.ref('letrasLiberadas').set(null);
 
                 const consoleBox = document.getElementById('consoleLog');
@@ -827,17 +926,24 @@
             const t = document.getElementById('tabelaHistoricoChamadas');
             if(!t) return;
             t.innerHTML = '';
-            if(!historicoChamadas.length) {
-                t.innerHTML = `<tr><td colspan="7" align="center" style="color:#64748b;">SEM CHAMADAS NO DIA.</td></tr>`;
+
+            const busca = String(document.getElementById('buscaHistoricoMotorista')?.value || '').trim().toUpperCase();
+            let lista = [...historicoChamadas];
+            if(busca) {
+                lista = lista.filter(h => String(h.nome || '').toUpperCase().includes(busca));
+            }
+
+            if(!lista.length) {
+                t.innerHTML = `<tr><td colspan="7" align="center" style="color:#64748b;">SEM REGISTROS PARA A BUSCA INFORMADA.</td></tr>`;
                 return;
             }
-            historicoChamadas.forEach(h => {
+            lista.forEach(h => {
                 t.innerHTML += `<tr>
                     <td>${h.data ? new Date(h.data).toLocaleTimeString() : '-'}</td>
                     <td>${h.chegada ? new Date(h.chegada).toLocaleTimeString() : '-'}</td>
                     <td>${h.tempoEsperaMs ? formatarTempoLive(h.tempoEsperaMs) : '-'}</td>
                     <td>${h.gaiola || '-'}</td>
-                    <td>${h.nome || '-'}</td>
+                    <td>${h.nome || '-'}${h.evento === 'NOSHOW' ? ' <span class="tag-noshow">• NOSHOW</span>' : ''}</td>
                     <td>${h.id || '-'}</td>
                     <td>${h.mesa || '-'}</td>
                 </tr>`;
@@ -972,17 +1078,18 @@
                 if(tD) tD.innerHTML += `<tr><td>${v.gaiola || '-'}<br><small>${v.nome}</small></td><td>${v.mesaResponsavel || '-'}</td><td>${statusTxt}${v.prioridadeNoShow ? ' <span class="tag-noshow">• NO-SHOW</span>' : ''}</td><td>${formatarTempoLive(dur)}</td></tr>`;
 
                 if(v.status === 'EM_ATENDIMENTO' && v.mesaResponsavel === lAtu && tM) {
-                    const acaoAnalise = (lAtu === 'Admin')
-                        ? `<button type="button" class="btn-padrao" style="border-color:#f59e0b; color:#f59e0b;" onclick="penalizarVeiculo('${v.id}')" title="Enviar para Final de Fila">RETIDO</button>`
-                        : '';
+                    const btnSegunda = `<button type="button" class="btn-padrao" style="margin-right:8px;" onclick="segundaChamada('${v.id}')" title="Chamar novamente">2ª CHAMADA</button>`;
+                    const btnRetido = ((roleAtu === 'admin' || lAtu === 'Admin')
+                        ? `<button type="button" class="btn-padrao" style="border-color:#f59e0b; color:#f59e0b;" onclick="penalizarVeiculo('${v.id}')" title="Enviar para Final da Fila">RETIDO</button>`
+                        : '');
                     tM.innerHTML += `<tr>
                         <td>${v.gaiola}</td>
                         <td>${formatarTempoLive(ag - v.horaChamada)}</td>
-                        <td align="right" ${lAtu === 'Admin' ? '' : 'style="display:none;"'}>${acaoAnalise}</td>
+                        <td align="right">${btnSegunda}${btnRetido}</td>
                     </tr>`;
                 }
 
-                if((v.status === 'FINAL_FILA' || v.status === 'ATRASADO_AUSENTE') && tF) tF.innerHTML += `<tr><td style="color:#ef4444; font-weight:bold;">${v.gaiola}<br><small style="color:#fff;">${v.nome}</small></td><td>${v.chegada ? new Date(v.chegada).toLocaleTimeString() : '-'}</td><td align="right"><button type="button" class="btn-padrao" onclick="liberarFinalFila('${v.id}')">LIBERAR</button></td></tr>`;
+                if(v.status === 'FINAL_FILA' && tF) tF.innerHTML += `<tr><td style="color:#ef4444; font-weight:bold;">${v.gaiola}<br><small style="color:#fff;">${v.nome}</small></td><td>${v.chegada ? new Date(v.chegada).toLocaleTimeString() : '-'}</td><td align="right"><button type="button" class="btn-padrao" onclick="liberarFinalFila('${v.id}')">LIBERAR</button></td></tr>`;
             });
 
             if(elTempoMedio) {
@@ -1024,6 +1131,7 @@
 
             renderizarPresentes();
             renderizarHistoricoChamadas();
+            renderizarNoShow();
             renderizarAuditoria();
         }
 
@@ -1042,7 +1150,29 @@
                     const dataHora = new Date().toLocaleTimeString();
 
                     if (!v) {
-                        consoleBox.innerHTML += `<div class="log-linha log-erro">[${dataHora}] > ERRO: ID [${id}] NÃO ENCONTRADO.</div>`;
+                        const ausenteRepassado = vt.find(x => String(x.idNovoMotorista || '').toUpperCase() === id && x.rotaRepassada);
+                        if(ausenteRepassado) {
+                            const novoMotorista = {
+                                id: id,
+                                gaiola: ausenteRepassado.gaiola,
+                                nome: `SUBSTITUTO DE ${ausenteRepassado.nome || 'MOTORISTA'}`,
+                                status: 'AGUARDANDO',
+                                chegada: Date.now(),
+                                horaChamada: null,
+                                horaFinalizado: null,
+                                finalizado: false,
+                                mesaResponsavel: '',
+                                prioridadeNoShow: true,
+                                ausenteLiberacao: false,
+                                criadoManual: true,
+                                origemNoShow: ausenteRepassado.id
+                            };
+                            vt.push(novoMotorista);
+                            db.ref('veiculos').set(vt);
+                            consoleBox.innerHTML += `<div class="log-linha log-ok">[${dataHora}] > SUBSTITUTO COM PRIORIDADE: <span class="log-rota-neon">${novoMotorista.gaiola}</span></div>`;
+                        } else {
+                            consoleBox.innerHTML += `<div class="log-linha log-erro">[${dataHora}] > ERRO: ID [${id}] NÃO ENCONTRADO.</div>`;
+                        }
                     } else if (v.status !== 'NO_PERIMETRO' && v.status !== 'ATRASADO_AUSENTE') {
                         consoleBox.innerHTML += `<div class="log-linha" style="color: #f59e0b;">[${dataHora}] > AVISO: MOTORISTA JÁ FEZ CHECK-IN.</div>`;
                     } else {
@@ -1072,7 +1202,7 @@
 
         window.exportarHistoricoDia = function() {
             if(!historicoChamadas.length) return alert("Não há histórico para exportar.");
-            const linhas = [["HORARIO_CHAMADA","HORARIO_CHEGADA","TEMPO_ESPERA","GAIOLA","MOTORISTA","ID","MESA"]];
+            const linhas = [["HORARIO_CHAMADA","HORARIO_CHEGADA","TEMPO_ESPERA","GAIOLA","MOTORISTA","ID","MESA","EVENTO"]];
             historicoChamadas.forEach(h => {
                 linhas.push([
                     h.data ? new Date(h.data).toLocaleTimeString() : '',
@@ -1081,7 +1211,8 @@
                     h.gaiola || '',
                     h.nome || '',
                     h.id || '',
-                    h.mesa || ''
+                    h.mesa || '',
+                    h.evento || 'CHAMADA'
                 ]);
             });
             const csv = linhas.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
