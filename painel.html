@@ -123,10 +123,6 @@
         .chip-ausente { background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.4);}
         .chip-chamado { background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.4);}
         .chip-retido { background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.4);}
-    
-        .segunda-chamada-box { width:100%; padding:12px; border:1px solid rgba(56,189,248,0.35); border-radius:8px; background: rgba(56,189,248,0.05); box-sizing:border-box; }
-        .segunda-chamada-box label { font-size:11px; color:#38bdf8; font-weight:bold; letter-spacing:1px; display:block; margin-bottom:8px; }
-        .segunda-chamada-box p { font-size:11px; color:#94a3b8; margin:0; line-height:1.4; }
 
         .check-wrap { display:inline-flex; justify-content:center; align-items:center; cursor:pointer; user-select:none; width:24px; height:24px; position:relative; }
         .check-wrap input { position:absolute; inset:0; opacity:0; cursor:pointer; margin:0; width:24px; height:24px; z-index:2; }
@@ -247,10 +243,6 @@
                             <label>🚨 REALIZAR AUDITORIA (GAIOLA / LETRA)</label>
                             <input type="text" id="inputFinalFila" placeholder="DIGITAR GAIOLA OU LETRA..." oninput="this.value = this.value.toUpperCase()" onkeypress="if(event.key === 'Enter') { event.preventDefault(); addRotaFinalFila(); }">
                             <button type="button" class="btn-padrao btn-critico" onclick="addRotaFinalFila()">SALVAR AUDITORIA</button>
-                        </div>
-                        <div class="segunda-chamada-box">
-                            <label>🔊 SEGUNDA CHAMADA</label>
-                            <p>Use o botão "2ª CHAMADA" na lista <b>EM ANÁLISE</b> para anunciar novamente o motorista.</p>
                         </div>
                     </div>
                     <div class="card-analise">
@@ -706,7 +698,7 @@
             estaFalando = true;
             const d = audioFila.shift();
             document.getElementById('displayPlaca').innerText = d.gaiola || d.rota || '---';
-            document.getElementById('displayNomeMotorista').innerText = d.nome;
+            document.getElementById('displayNomeMotorista').innerText = d.noShowRepassado ? 'NOSHOW' : d.nome;
             document.getElementById('displayBancada').innerText = d.mesa.toUpperCase().replace('MESA ', '');
             document.getElementById('displayBancadaContainer').style.display = 'block';
             document.getElementById('textoAlerta').style.animation = 'piscaAlerta 1s infinite alternate';
@@ -715,7 +707,7 @@
             let abaTv = document.getElementById('abaTv');
             if ((roleAtu === 'admin' || lAtu === 'Admin' || roleAtu === 'painel' || lAtu === 'Painel') && abaTv && abaTv.classList.contains('active')) {
                 window.speechSynthesis.cancel();
-                let u = new SpeechSynthesisUtterance(`Atenção motorista ${d.nome}, gaiola ${d.gaiola || d.rota}. Dirija-se à ${d.mesa}.`);
+                let u = new SpeechSynthesisUtterance(d.noShowRepassado ? `Gaiola ${d.gaiola || d.rota}, NOSHOW. Dirija-se à ${d.mesa}.` : `Atenção motorista ${d.nome}, gaiola ${d.gaiola || d.rota}. Dirija-se à ${d.mesa}.`);
                 u.lang = 'pt-BR'; u.onend = () => { estaFalando = false; setTimeout(processarFilaAudio, 1000); };
                 window.speechSynthesis.speak(u);
             } else { setTimeout(() => { estaFalando = false; processarFilaAudio(); }, 5000); }
@@ -815,7 +807,7 @@
                 v.horaChamada = Date.now();
                 v.ausenteLiberacao = false;
                 db.ref('veiculos').set(vt);
-                db.ref('tvComando').set({ id: v.id, gaiola: v.gaiola, nome: v.nome, mesa: lAtu, data: Date.now() });
+                db.ref('tvComando').set({ id: v.id, gaiola: v.gaiola, nome: v.nome, mesa: lAtu, data: Date.now(), noShowRepassado: !!v.noShowRepassado });
                 salvarHistoricoChamada(v);
             }
         };
@@ -947,7 +939,7 @@
         window.segundaChamada = function(id) {
             const v = veiculos.find(x => x.id === id);
             if(!v) return;
-            db.ref('tvComando').set({ id: v.id, gaiola: v.gaiola, nome: v.nome, mesa: lAtu, data: Date.now(), segundaChamada: true });
+            db.ref('tvComando').set({ id: v.id, gaiola: v.gaiola, nome: v.nome, mesa: lAtu, data: Date.now(), segundaChamada: true, noShowRepassado: !!v.noShowRepassado });
         };
 
         window.limparDados = function() {
@@ -1212,7 +1204,7 @@
                             const novoMotorista = {
                                 id: id,
                                 gaiola: ausenteRepassado.gaiola,
-                                nome: `SUBSTITUTO DE ${ausenteRepassado.nome || 'MOTORISTA'}`,
+                                nome: 'NOSHOW',
                                 status: 'AGUARDANDO',
                                 chegada: Date.now(),
                                 horaChamada: null,
@@ -1222,7 +1214,8 @@
                                 prioridadeNoShow: true,
                                 ausenteLiberacao: false,
                                 criadoManual: true,
-                                origemNoShow: ausenteRepassado.id
+                                origemNoShow: ausenteRepassado.id,
+                                noShowRepassado: true
                             };
                             vt.push(novoMotorista);
                             db.ref('veiculos').set(vt);
