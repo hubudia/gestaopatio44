@@ -74,10 +74,11 @@
         #tabelaAguardandoMesa td { border-bottom: 1px solid rgba(56, 189, 248, 0.25); }
         #tabelaAguardandoMesa tr:hover { background: rgba(56, 189, 248, 0.08); }
 
-        .ff-box { width: 100%; margin-top: 15px; padding: 12px; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; background: rgba(239, 68, 68, 0.05); }
-        .ff-box label { font-size: 11px; color: #ef4444; font-weight: bold; letter-spacing: 1px; display: block; margin-bottom: 8px; }
-        #inputFinalFila, #inputLetrasLiberadas { width: 100%; padding: 12px; background: #0b132b; border: 1px solid #ef4444; border-radius: 4px; color: #fff; font-size: 18px; font-weight: bold; text-align: center; text-transform: uppercase; box-sizing: border-box; }
-        #inputFinalFila:focus, #inputLetrasLiberadas:focus { border-color: #ff0000; box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+        .ff-box { width: 100%; margin-top: 15px; padding: 16px; border: 1px solid rgba(239, 68, 68, 0.22); border-radius: 10px; background: rgba(239, 68, 68, 0.04); display:flex; flex-direction:column; gap:12px; }
+        .ff-box label { font-size: 12px; color: #f87171; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 0; }
+        #inputFinalFila, #inputLetrasLiberadas { width: 100%; padding: 14px; background: #020617; border: 1px solid #334155; border-radius: 8px; color: #fff; font-size: 16px; font-weight: bold; text-align: center; text-transform: uppercase; box-sizing: border-box; }
+        #inputFinalFila:focus, #inputLetrasLiberadas:focus { border-color: #ef4444; box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.3); }
+        .ff-box .btn-padrao { width:100%; padding:12px; border-radius:8px; }
 
         .console-box { background: #020617; border: 1px solid #1e293b; padding: 20px; height: 280px; overflow-y: auto; margin-top: 15px; font-size: 16px; color: #94a3b8; border-radius: 8px; font-family: 'Segoe UI', sans-serif;}
         .log-linha { margin: 10px 0; border-bottom: 1px dashed #1e293b; padding-bottom: 10px; line-height: 1.5; }
@@ -115,6 +116,15 @@
         .chip-ausente { background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.4);}
         .chip-chamado { background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.4);}
         .chip-retido { background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.4);}
+    
+        .check-wrap { display:flex; justify-content:center; align-items:center; cursor:pointer; user-select:none; }
+        .check-wrap input { display:none; }
+        .check-wrap span { width:20px; height:20px; border:2px solid #64748b; border-radius:5px; display:inline-block; transition:all 0.2s ease; background:#020617; }
+        .check-wrap input:checked + span { background:#10b981; border-color:#10b981; box-shadow:0 0 10px rgba(16,185,129,0.45); }
+        .input-novo-id { padding:12px !important; border-radius:8px !important; border:1px solid #334155 !important; background:#020617 !important; color:#f1f5f9 !important; font-size:14px !important; width:100% !important; min-width:180px; }
+        .input-novo-id:focus { border-color:#38bdf8 !important; box-shadow:0 0 0 1px rgba(56,189,248,0.3) !important; outline:none !important; }
+        .linha-noshow-ativa { opacity:0.6; }
+
     </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -855,6 +865,17 @@
                 salvarHistoricoNoShow(v);
             }
 
+            const linha = document.getElementById(`noshow_${id}`)?.closest('tr');
+            if(linha) {
+                if(noShowMarcado){
+                    linha.style.opacity = "0.6";
+                    linha.classList.add('linha-noshow-ativa');
+                } else {
+                    linha.style.opacity = "1";
+                    linha.classList.remove('linha-noshow-ativa');
+                }
+            }
+
             db.ref('veiculos').set(vt);
             alert('Configuração de NoShow salva.');
         };
@@ -872,6 +893,30 @@
                 t.innerHTML = `<tr><td colspan="7" align="center" style="color:#64748b;">NENHUM MOTORISTA AUSENTE.</td></tr>`;
                 return;
             }
+
+            ausentes.forEach(v => {
+                const linhaClass = v.noShowConfirmado ? 'linha-noshow-ativa' : '';
+                t.innerHTML += `<tr class="${linhaClass}">
+                    <td>${v.gaiola || '-'}</td>
+                    <td>${v.nome || '-'}</td>
+                    <td>${v.id || '-'}</td>
+                    <td align="center">
+                        <label class="check-wrap">
+                            <input type="checkbox" id="noshow_${v.id}" ${v.noShowConfirmado ? 'checked' : ''}>
+                            <span></span>
+                        </label>
+                    </td>
+                    <td align="center">
+                        <label class="check-wrap">
+                            <input type="checkbox" id="repassada_${v.id}" ${v.rotaRepassada ? 'checked' : ''}>
+                            <span></span>
+                        </label>
+                    </td>
+                    <td><input type="text" class="input-novo-id" id="novoId_${v.id}" value="${v.idNovoMotorista || ''}" placeholder="ID NOVO MOTORISTA"></td>
+                    <td align="right"><button type="button" class="btn-padrao btn-acao" onclick="salvarNoShowConfig('${v.id}')">SALVAR</button></td>
+                </tr>`;
+            });
+        }
 
             ausentes.forEach(v => {
                 t.innerHTML += `<tr>
