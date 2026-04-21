@@ -133,6 +133,22 @@
         .input-novo-id:focus { border-color:#38bdf8 !important; box-shadow:0 0 0 1px rgba(56,189,248,0.3) !important; outline:none !important; }
         .linha-noshow-ativa { opacity:0.6; }
 
+    
+        .fila-header { display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:12px; flex-wrap:wrap; }
+        .fila-total { color:#38bdf8; font-weight:700; font-family:'Segoe UI', sans-serif; font-size:13px; letter-spacing:0.5px; }
+        .fila-busca { max-width:260px; min-width:220px; padding:10px 12px !important; font-size:14px !important; }
+        .obs-input { width:100%; padding:8px 10px; font-size:12px; background:#0f172a; border:1px solid #334155; color:#f8fafc; border-radius:6px; box-sizing:border-box; }
+        .obs-input:focus { border-color:#38bdf8; outline:none; box-shadow:0 0 0 1px rgba(56,189,248,0.3); }
+        .btn-copy-id { padding:4px 8px; font-size:11px; border-radius:6px; border:1px solid #38bdf8; background:transparent; color:#38bdf8; cursor:pointer; margin-left:8px; }
+        .btn-copy-id:hover { background:#38bdf8; color:#0f172a; }
+        .check-wrap { display:inline-flex; justify-content:center; align-items:center; cursor:pointer; user-select:none; width:24px; height:24px; position:relative; }
+        .check-wrap input { position:absolute; inset:0; opacity:0; cursor:pointer; margin:0; width:24px; height:24px; z-index:2; }
+        .check-wrap span { width:20px; height:20px; border:2px solid #64748b; border-radius:5px; display:inline-block; transition:all 0.2s ease; background:#020617; pointer-events:none; }
+        .check-wrap input:checked + span { background:#10b981; border-color:#10b981; box-shadow:0 0 10px rgba(16,185,129,0.45); }
+        .input-novo-id { padding:12px !important; border-radius:8px !important; border:1px solid #334155 !important; background:#0f172a !important; color:#f1f5f9 !important; font-size:14px !important; width:100% !important; min-width:180px; box-sizing:border-box !important; pointer-events:auto !important; user-select:text !important; }
+        .input-novo-id:focus { border-color:#38bdf8 !important; box-shadow:0 0 0 1px rgba(56,189,248,0.3) !important; outline:none !important; }
+        .linha-noshow-ativa { opacity:0.6; }
+
     </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -261,7 +277,7 @@
             <div id="abaTv" class="aba" style="padding: 0;">
                 <div class="tv-layout">
                     <div class="tv-historico">
-                        <h3 style="color:#10b981; border-bottom:1px dashed rgba(16, 185, 129, 0.5); padding-bottom:10px; text-align:center;">🟢 ÚLTIMOS 5 CHAMADOS</h3>
+                        <h3 style="color:#10b981; border-bottom:1px dashed rgba(16, 185, 129, 0.5); padding-bottom:10px; text-align:center; font-size:clamp(35px, 4vw, 55px); line-height:1.1;">🟢 ÚLTIMOS 5 CHAMADOS</h3>
                         <div id="tvEmAtendimentoLista" style="overflow-y: auto; flex-grow: 1;"></div>
                     </div>
 
@@ -316,7 +332,7 @@
                 </div>
                 <div class="table-wrapper">
                     <table>
-                        <thead><tr><th>GAIOLA</th><th>MOTORISTA</th><th>ID</th><th>STATUS</th></tr></thead>
+                        <thead><tr><th>GAIOLA</th><th>MOTORISTA</th><th>ID</th><th>STATUS</th><th>OBS</th></tr></thead>
                         <tbody id="tabelaPresentes"></tbody>
                     </table>
                 </div>
@@ -504,7 +520,6 @@
             if (!Array.isArray(regrasFinalFila) || regrasFinalFila.length === 0) {
                 return false;
             }
-
             const gaiola = normalizarTexto(veiculo.gaiola);
             return regrasFinalFila.includes(gaiola);
         }
@@ -711,7 +726,7 @@
             document.getElementById('displayBancada').innerText = d.mesa.toUpperCase().replace('MESA ', '');
             document.getElementById('displayBancadaContainer').style.display = 'block';
             document.getElementById('textoAlerta').style.animation = 'piscaAlerta 1s infinite alternate';
-            document.getElementById('textoAlerta').innerText = "ATENÇÃO: DESLOCAMENTO";
+            document.getElementById('textoAlerta').innerText = "ATENÇÃO";
 
             let abaTv = document.getElementById('abaTv');
             if ((roleAtu === 'admin' || lAtu === 'Admin' || roleAtu === 'painel' || lAtu === 'Painel') && abaTv && abaTv.classList.contains('active')) {
@@ -841,6 +856,29 @@
             }
         };
 
+        window.copiarId = async function(id) {
+            try {
+                await navigator.clipboard.writeText(String(id || ''));
+                alert('ID copiado.');
+            } catch(e) {
+                const area = document.createElement('textarea');
+                area.value = String(id || '');
+                document.body.appendChild(area);
+                area.select();
+                document.execCommand('copy');
+                area.remove();
+                alert('ID copiado.');
+            }
+        };
+
+        window.salvarObsPresente = function(id, valor) {
+            let vt = [...veiculos];
+            let v = vt.find(x => x.id === id);
+            if(!v) return;
+            v.obsPresente = valor;
+            db.ref('veiculos').set(vt);
+        };
+
         window.salvarLetrasLiberadas = function() {
             const letras = document.getElementById('inputLetrasLiberadas').value
                 .split(',')
@@ -898,7 +936,6 @@
 
             db.ref('veiculos').set(vt);
             renderizarNoShow();
-            renderizarPresentes();
             alert('Configuração de NoShow salva.');
         };
 
@@ -935,7 +972,8 @@
                         </label>
                     </td>
                     <td>
-                        <input type="text"
+                        <input
+                            type="text"
                             class="input-novo-id"
                             id="novoId_${v.id}"
                             value="${v.idNovoMotorista || ''}"
@@ -943,9 +981,7 @@
                             autocomplete="off"
                             spellcheck="false">
                     </td>
-                    <td align="right">
-                        <button type="button" class="btn-padrao btn-acao" onclick="salvarNoShowConfig('${v.id}')">SALVAR</button>
-                    </td>
+                    <td align="right"><button type="button" class="btn-padrao btn-acao" onclick="salvarNoShowConfig('${v.id}')">SALVAR</button></td>
                 </tr>`;
             });
         }
@@ -1015,6 +1051,7 @@
         }
 
         function statusPresenca(v) {
+            if(v.noShowConfirmado) return { txt:'NOSHOW', cls:'chip-retido' };
             if(v.status === 'EM_ATENDIMENTO' || v.status === 'FINALIZADO') return { txt:'CHAMADO', cls:'chip-chamado' };
             if(v.status === 'AGUARDANDO' || v.status === 'FINAL_FILA') return { txt:'PRESENTE', cls:'chip-presente' };
             if(v.status === 'ATRASADO_AUSENTE') return { txt:'AUSENTE', cls:'chip-ausente' };
@@ -1035,17 +1072,19 @@
             }
 
             if(!filtrados.length) {
-                t.innerHTML = `<tr><td colspan="4" align="center" style="color:#64748b;">NENHUMA GAIOLA ENCONTRADA PARA O FILTRO SELECIONADO.</td></tr>`;
+                t.innerHTML = `<tr><td colspan="5" align="center" style="color:#64748b;">NENHUMA GAIOLA ENCONTRADA PARA O FILTRO SELECIONADO.</td></tr>`;
                 return;
             }
 
             filtrados.forEach(v => {
                 const st = statusPresenca(v);
+                const nomeExibido = v.noShowConfirmado ? `${v.nome || '-'} • NOSHOW` : (v.nome || '-');
                 t.innerHTML += `<tr>
                     <td>${v.gaiola || '-'}</td>
-                    <td>${v.nome || '-'}</td>
-                    <td>${v.id || '-'}</td>
+                    <td>${nomeExibido}</td>
+                    <td>${v.id || '-'}<button type="button" class="btn-copy-id" onclick="copiarId('${v.id || ''}')">COPIAR</button></td>
                     <td><span class="status-chip ${st.cls}">${st.txt}</span></td>
+                    <td><input type="text" class="obs-input" value="${String(v.obsPresente || '').replace(/"/g, '&quot;')}" placeholder="OBS" onblur="salvarObsPresente('${v.id}', this.value)"></td>
                 </tr>`;
             });
         }
@@ -1098,8 +1137,10 @@
         }
 
         function renderizarTelas() {
-            const tD = document.getElementById('tabelaDashboard'), tA = document.querySelector('#tabelaAguardandoMesa tbody'),
-                  tM = document.getElementById('tabelaMinhaMesa'), tF = document.getElementById('tabelaFinalFilaAdmin');
+            const tD = document.getElementById('tabelaDashboard'),
+                  tA = document.querySelector('#tabelaAguardandoMesa tbody'),
+                  tM = document.getElementById('tabelaMinhaMesa'),
+                  tF = document.getElementById('tabelaFinalFilaAdmin');
 
             const lAtendTV = document.getElementById('tvEmAtendimentoLista');
             const elTempoMedio = document.getElementById('displayTempoMedio');
@@ -1110,13 +1151,22 @@
 
             let aguardando = veiculos.filter(v =>
                 v.status === 'AGUARDANDO' ||
-                (v.status === 'EM_ATENDIMENTO' && (ag - v.horaChamada < 7000))
+                (v.status === 'EM_ATENDIMENTO' && (ag - (v.horaChamada || 0) < 7000))
             );
 
             aguardando.sort((a, b) => {
                 if(!!b.prioridadeNoShow !== !!a.prioridadeNoShow) return (b.prioridadeNoShow ? 1 : 0) - (a.prioridadeNoShow ? 1 : 0);
                 return (a.chegada || 0) - (b.chegada || 0);
             });
+
+            if(elTotalAguardando) {
+                elTotalAguardando.innerText = aguardando.filter(v => v.status === 'AGUARDANDO').length;
+            }
+
+            const buscaGaiola = String(document.getElementById('buscaGaiolaFila')?.value || '').trim().toUpperCase();
+            if(buscaGaiola) {
+                aguardando = aguardando.filter(v => String(v.gaiola || '').toUpperCase().includes(buscaGaiola));
+            }
 
             let totalTempoMs = 0;
             let qtdFinalizados = 0;
@@ -1130,7 +1180,9 @@
                     }
                 }
 
-                let dur = (v.status === 'FINALIZADO') ? (v.horaFinalizado - v.horaChamada) : (ag - (v.horaChamada || v.chegada || ag));
+                let dur = (v.status === 'FINALIZADO' && v.horaFinalizado && v.horaChamada)
+                    ? (v.horaFinalizado - v.horaChamada)
+                    : (ag - (v.horaChamada || v.chegada || ag));
 
                 if(v.status === 'FINALIZADO' && v.horaFinalizado && v.horaChamada) {
                     totalTempoMs += (v.horaFinalizado - v.horaChamada);
@@ -1140,7 +1192,7 @@
                 let statusTxt = v.status;
                 if(v.status === 'ATRASADO_AUSENTE') statusTxt = 'ATRASO/AUSENTE';
 
-                if(tD) tD.innerHTML += `<tr><td>${v.gaiola || '-'}<br><small>${v.nome}</small></td><td>${v.mesaResponsavel || '-'}</td><td>${statusTxt}${v.prioridadeNoShow ? ' <span class="tag-noshow">• NO-SHOW</span>' : ''}</td><td>${formatarTempoLive(dur)}</td></tr>`;
+                if(tD) tD.innerHTML += `<tr><td>${v.gaiola || '-'}<br><small>${v.nome || '-'}</small></td><td>${v.mesaResponsavel || '-'}</td><td>${statusTxt}${v.prioridadeNoShow ? ' <span class="tag-noshow">• NO-SHOW</span>' : ''}</td><td>${formatarTempoLive(dur)}</td></tr>`;
 
                 if(v.status === 'EM_ATENDIMENTO' && v.mesaResponsavel === lAtu && tM) {
                     const btnSegunda = `<button type="button" class="btn-padrao" style="margin-right:8px;" onclick="segundaChamada('${v.id}')" title="Chamar novamente">2ª CHAMADA</button>`;
@@ -1149,27 +1201,28 @@
                         : '');
                     tM.innerHTML += `<tr>
                         <td>${v.gaiola}</td>
-                        <td>${formatarTempoLive(ag - v.horaChamada)}</td>
+                        <td>${formatarTempoLive(ag - (v.horaChamada || ag))}</td>
                         <td align="right">${btnSegunda}${btnRetido}</td>
                     </tr>`;
                 }
 
-                if(v.status === 'FINAL_FILA' && tF) tF.innerHTML += `<tr><td style="color:#ef4444; font-weight:bold;">${v.gaiola}<br><small style="color:#fff;">${v.nome}</small></td><td>${v.chegada ? new Date(v.chegada).toLocaleTimeString() : '-'}</td><td align="right"><button type="button" class="btn-padrao" onclick="liberarFinalFila('${v.id}')">LIBERAR</button></td></tr>`;
+                if(v.status === 'FINAL_FILA' && tF) {
+                    tF.innerHTML += `<tr><td style="color:#ef4444; font-weight:bold;">${v.gaiola}<br><small style="color:#fff;">${v.nome}</small></td><td>${v.chegada ? new Date(v.chegada).toLocaleTimeString() : '-'}</td><td align="right"><button type="button" class="btn-padrao" onclick="liberarFinalFila('${v.id}')">LIBERAR</button></td></tr>`;
+                }
             });
 
             if(elTempoMedio) {
-                if(qtdFinalizados > 0) elTempoMedio.innerText = formatarTempoLive(totalTempoMs / qtdFinalizados);
-                else elTempoMedio.innerText = "00m 00s";
+                elTempoMedio.innerText = qtdFinalizados > 0 ? formatarTempoLive(totalTempoMs / qtdFinalizados) : "00m 00s";
             }
 
             aguardando.forEach(v => {
-                let isCongelado = v.status === 'EM_ATENDIMENTO' && (ag - v.horaChamada < 7000);
+                let isCongelado = v.status === 'EM_ATENDIMENTO' && (ag - (v.horaChamada || 0) < 7000);
                 const destaqueNoShow = v.prioridadeNoShow ? `<div class="tag-noshow" style="margin-top:4px;">PRIORIDADE NO-SHOW</div>` : '';
 
                 if (isCongelado) {
                     if(tA) tA.innerHTML += `<tr style="background: rgba(239, 68, 68, 0.1);">
                         <td class="rota-text" style="opacity: 0.5;">${v.gaiola}<br><span class="nome-text">${v.nome}</span>${destaqueNoShow}</td>
-                        <td class="tempo-text" style="opacity: 0.5;">${formatarTempoLive(ag - v.chegada)}</td>
+                        <td class="tempo-text" style="opacity: 0.5;">${formatarTempoLive(ag - (v.chegada || ag))}</td>
                         <td><div style="background:#ef4444; border: 1px solid #ef4444; border-radius:4px; height: 35px; width: 100%; box-sizing: border-box; box-shadow: 0 0 10px rgba(239,68,68,0.4);"></div></td>
                     </tr>`;
                 } else {
