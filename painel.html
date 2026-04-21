@@ -665,7 +665,7 @@
             document.getElementById('textoAlerta').innerText = "ATENÇÃO: DESLOCAMENTO";
 
             let abaTv = document.getElementById('abaTv');
-            if (lAtu === 'Admin' && abaTv && abaTv.classList.contains('active')) {
+            if ((roleAtu === 'admin' || lAtu === 'Admin' || roleAtu === 'painel' || lAtu === 'Painel') && abaTv && abaTv.classList.contains('active')) {
                 window.speechSynthesis.cancel();
                 let u = new SpeechSynthesisUtterance(`Atenção motorista ${d.nome}, gaiola ${d.gaiola || d.rota}. Dirija-se à ${d.mesa}.`);
                 u.lang = 'pt-BR'; u.onend = () => { estaFalando = false; setTimeout(processarFilaAudio, 1000); };
