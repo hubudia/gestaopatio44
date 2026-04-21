@@ -771,7 +771,8 @@
                 mesa: lAtu,
                 data: agora,
                 chegada: v.chegada || null,
-                tempoEsperaMs: v.chegada ? (agora - v.chegada) : null
+                tempoEsperaMs: v.chegada ? (agora - v.chegada) : null,
+                noShowRepassado: !!v.noShowRepassado
             });
             db.ref('historicoChamadas').set(h.slice(0, 500));
         }
