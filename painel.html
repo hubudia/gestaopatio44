@@ -335,7 +335,7 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const uAtu = sessionStorage.getItem('usuarioLogado'), lAtu = sessionStorage.getItem('lugarLogado');
+        const uAtu = sessionStorage.getItem('usuarioLogado'), lAtu = sessionStorage.getItem('lugarLogado'), roleAtu = sessionStorage.getItem('roleLogado');
 
         let veiculos = [], regrasFinalFila = [], listaMesas = [], historicoChamadas = [], letrasLiberadas = [], auditoriaRegistros = [];
         let audioFila = [], estaFalando = false, uDataChamada = 0;
@@ -349,7 +349,7 @@
             document.getElementById('txtServidor').innerText = s.val() ? 'ONLINE' : 'CONECTANDO...';
         });
 
-        if(lAtu === 'Admin') {
+        if(roleAtu === 'admin' || lAtu === 'Admin') {
             const labelAuditoriaMesaAdmin = document.querySelector('.ff-box label');
             if(labelAuditoriaMesaAdmin) labelAuditoriaMesaAdmin.innerText = '🚨 FINAL DE FILA (GAIOLA / LETRA)';
             const botaoAuditoriaMesaAdmin = document.querySelector('.ff-box .btn-padrao');
@@ -357,6 +357,19 @@
 
             [bA, bC, bT, bM, bR, bF, bAud, bCtrl, bP, bH].forEach(b => { if(b) b.style.display = 'flex'; });
             if(bA) bA.click();
+        } else if(roleAtu === 'painel' || lAtu === 'Painel') {
+            [bC, bT].forEach(b => { if(b) b.style.display = 'flex'; });
+            if(bA) bA.remove(); if(bM) bM.remove(); if(bR) bR.remove(); if(bF) bF.remove();
+            if(bAud) bAud.remove(); if(bCtrl) bCtrl.remove(); if(bP) bP.remove(); if(bH) bH.remove();
+            const abaAdmin = document.getElementById('abaAdmin'); if(abaAdmin) abaAdmin.remove();
+            const abaMesas = document.getElementById('abaMesas'); if(abaMesas) abaMesas.remove();
+            const abaRadar = document.getElementById('abaRadar'); if(abaRadar) abaRadar.remove();
+            const abaFinalFila = document.getElementById('abaFinalFila'); if(abaFinalFila) abaFinalFila.remove();
+            const abaAuditoria = document.getElementById('abaAuditoria'); if(abaAuditoria) abaAuditoria.remove();
+            const abaControle = document.getElementById('abaControle'); if(abaControle) abaControle.remove();
+            const abaPresentes = document.getElementById('abaPresentes'); if(abaPresentes) abaPresentes.remove();
+            const abaHistorico = document.getElementById('abaHistorico'); if(abaHistorico) abaHistorico.remove();
+            if(bC) bC.click();
         } else {
             document.body.classList.add('is-mesa-operacao');
             [bM, bAud].forEach(b => { if(b) b.style.display = 'flex'; });
@@ -378,7 +391,6 @@
                 const txt = bAud.querySelector('.nav-text');
                 if(txt) txt.textContent = 'AUDITORIA';
             }
-            if(bM) bM.click();
             const labelAuditoriaMesa = document.querySelector('.ff-box label');
             if(labelAuditoriaMesa) labelAuditoriaMesa.innerText = '🧾 AUDITORIA (GAIOLA / LETRA)';
             const botaoAuditoriaMesa = document.querySelector('.ff-box .btn-padrao');
@@ -387,8 +399,7 @@
             if(dNome && lAtu) dNome.innerText = lAtu.toUpperCase();
 
             if(bA) bA.remove(); if(bC) bC.remove(); if(bT) bT.remove();
-            if(bR) bR.remove(); if(bCtrl) bCtrl.remove();
-
+            if(bR) bR.remove(); if(bCtrl) bCtrl.remove(); if(bF) bF.remove();
             db.ref('mesasOcupadas').once('value').then(s => {
                 let ocupadas = s.val() || [];
                 if(lAtu && !ocupadas.includes(lAtu)) {
@@ -666,7 +677,7 @@
             let valor = document.getElementById('inputFinalFila').value.trim().toUpperCase();
             if(!valor) return;
 
-            if(lAtu !== 'Admin') {
+            if(!(roleAtu === 'admin' || lAtu === 'Admin')) {
                 registrarAuditoriaManualPorMesa();
                 document.getElementById('inputFinalFila').value = '';
                 alert("Auditoria registrada com sucesso.");
@@ -699,9 +710,15 @@
             document.getElementById('inputFinalFila').value = '';
         };
 
-        window.finalizarAuditoria = function(id) {
+        window.liberarFinalFila = function(id) {
             let vt = [...veiculos], v = vt.find(x => x.id === id);
-            if(v) { v.status = 'AGUARDANDO'; v.chegada = Date.now(); v.ausenteLiberacao = false; db.ref('veiculos').set(vt); }
+            if(v) {
+                v.status = 'AGUARDANDO';
+                v.chegada = Date.now();
+                v.ausenteLiberacao = false;
+                v.mesaResponsavel = '';
+                db.ref('veiculos').set(vt);
+            }
         };
 
         function salvarHistoricoChamada(v) {
@@ -741,7 +758,7 @@
         };
 
         window.penalizarVeiculo = function(id) {
-            if(confirm("O motorista não compareceu? Enviar para auditoria?")) {
+            if(confirm("ENVIAR MOTORISTA PARA FINAL DA FILA?")) {
                 let vt = [...veiculos];
                 let v = vt.find(x => x.id === id);
                 if(v) {
@@ -965,7 +982,7 @@
                     </tr>`;
                 }
 
-                if((v.status === 'FINAL_FILA' || v.status === 'ATRASADO_AUSENTE') && tF) tF.innerHTML += `<tr><td style="color:#ef4444; font-weight:bold;">${v.gaiola}<br><small style="color:#fff;">${v.nome}</small></td><td>${v.chegada ? new Date(v.chegada).toLocaleTimeString() : '-'}</td><td align="right"><button type="button" class="btn-padrao" onclick="finalizarAuditoria('${v.id}')">AUDITORIA FINALIZADA</button></td></tr>`;
+                if((v.status === 'FINAL_FILA' || v.status === 'ATRASADO_AUSENTE') && tF) tF.innerHTML += `<tr><td style="color:#ef4444; font-weight:bold;">${v.gaiola}<br><small style="color:#fff;">${v.nome}</small></td><td>${v.chegada ? new Date(v.chegada).toLocaleTimeString() : '-'}</td><td align="right"><button type="button" class="btn-padrao" onclick="liberarFinalFila('${v.id}')">LIBERAR</button></td></tr>`;
             });
 
             if(elTempoMedio) {
