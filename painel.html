@@ -495,8 +495,13 @@
         function normalizarTexto(v) { return String(v || '').trim().toUpperCase(); }
         function extrairLetra(gaiola) { return normalizarTexto(gaiola).split('-')[0]; }
         function temRegraFinalFila(veiculo) {
+            if (!Array.isArray(regrasFinalFila) || regrasFinalFila.length === 0) {
+                return false;
+            }
+
             const gaiola = normalizarTexto(veiculo.gaiola);
             const letra = extrairLetra(gaiola);
+
             return regrasFinalFila.includes(gaiola) || regrasFinalFila.includes(letra);
         }
 
@@ -1239,8 +1244,10 @@
                         db.ref('veiculos').set(vt);
 
                         let spanRota = `<span class="log-rota-neon">${v.gaiola}</span>`;
-                        let msg = caiFinal ? `⚠️ REGRA ATIVA: ${spanRota}` : `CHECK-IN OK: ${spanRota}`;
-                        let cor = caiFinal ? "log-erro" : "log-ok";
+                        let msg = (v.status === 'FINAL_FILA')
+                            ? `⚠️ ENVIADO PARA FINAL DE FILA: ${spanRota}`
+                            : `CHECK-IN OK: ${spanRota}`;
+                        let cor = (v.status === 'FINAL_FILA') ? "log-erro" : "log-ok";
                         consoleBox.innerHTML += `<div class="log-linha ${cor}">[${dataHora}] > ${msg}</div>`;
                     }
                     consoleBox.scrollTop = consoleBox.scrollHeight;
