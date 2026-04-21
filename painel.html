@@ -133,6 +133,15 @@
         .input-novo-id:focus { border-color:#38bdf8 !important; box-shadow:0 0 0 1px rgba(56,189,248,0.3) !important; outline:none !important; }
         .linha-noshow-ativa { opacity:0.6; }
 
+    
+        .fila-header { display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:12px; flex-wrap:wrap; }
+        .fila-total { color:#38bdf8; font-weight:700; font-family:'Segoe UI', sans-serif; font-size:13px; letter-spacing:0.5px; }
+        .fila-busca { max-width:260px; min-width:220px; padding:10px 12px !important; font-size:14px !important; }
+        .obs-input { width:100%; padding:8px 10px; font-size:12px; background:#0f172a; border:1px solid #334155; color:#f8fafc; border-radius:6px; box-sizing:border-box; }
+        .obs-input:focus { border-color:#38bdf8; outline:none; box-shadow:0 0 0 1px rgba(56,189,248,0.3); }
+        .btn-copy-id { padding:4px 8px; font-size:11px; border-radius:6px; border:1px solid #38bdf8; background:transparent; color:#38bdf8; cursor:pointer; margin-left:8px; }
+        .btn-copy-id:hover { background:#38bdf8; color:#0f172a; }
+
     </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -233,7 +242,13 @@
             <div id="abaMesas" class="aba">
                 <div class="mesas-grid">
                     <div class="card-radar">
-                        <h3>📡 FILA DE ESPERA</h3>
+                        <div class="fila-header">
+                            <h3 style="margin:0;">📡 FILA DE ESPERA</h3>
+                            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+                                <div class="fila-total">TOTAL AGUARDANDO: <span id="totalAguardandoFila">0</span></div>
+                                <input type="text" id="buscaGaiolaFila" class="fila-busca" placeholder="BUSCAR GAIOLA EX: A-23" oninput="renderizarTelas()">
+                            </div>
+                        </div>
                         <div class="table-wrapper"><table id="tabelaAguardandoMesa"><thead><tr><th>GAIOLA / MOTORISTA</th><th>ESPERA</th><th>AÇÃO</th></tr></thead><tbody></tbody></table></div>
                     </div>
                     <div class="card-decor">
@@ -255,7 +270,7 @@
             <div id="abaTv" class="aba" style="padding: 0;">
                 <div class="tv-layout">
                     <div class="tv-historico">
-                        <h3 style="color:#10b981; border-bottom:1px dashed rgba(16, 185, 129, 0.5); padding-bottom:10px; text-align:center;">🟢 ÚLTIMOS 5 CHAMADOS</h3>
+                        <h3 style="color:#10b981; border-bottom:1px dashed rgba(16, 185, 129, 0.5); padding-bottom:10px; text-align:center; font-size:clamp(35px, 4vw, 55px); line-height:1.1;">🟢 ÚLTIMOS 5 CHAMADOS</h3>
                         <div id="tvEmAtendimentoLista" style="overflow-y: auto; flex-grow: 1;"></div>
                     </div>
 
@@ -310,7 +325,7 @@
                 </div>
                 <div class="table-wrapper">
                     <table>
-                        <thead><tr><th>GAIOLA</th><th>MOTORISTA</th><th>ID</th><th>STATUS</th></tr></thead>
+                        <thead><tr><th>GAIOLA</th><th>MOTORISTA</th><th>ID</th><th>STATUS</th><th>OBS</th></tr></thead>
                         <tbody id="tabelaPresentes"></tbody>
                     </table>
                 </div>
@@ -705,7 +720,7 @@
             document.getElementById('displayBancada').innerText = d.mesa.toUpperCase().replace('MESA ', '');
             document.getElementById('displayBancadaContainer').style.display = 'block';
             document.getElementById('textoAlerta').style.animation = 'piscaAlerta 1s infinite alternate';
-            document.getElementById('textoAlerta').innerText = "ATENÇÃO: DESLOCAMENTO";
+            document.getElementById('textoAlerta').innerText = "ATENÇÃO";
 
             let abaTv = document.getElementById('abaTv');
             if ((roleAtu === 'admin' || lAtu === 'Admin' || roleAtu === 'painel' || lAtu === 'Painel') && abaTv && abaTv.classList.contains('active')) {
@@ -835,6 +850,30 @@
             }
         };
 
+
+        window.copiarId = async function(id) {
+            try {
+                await navigator.clipboard.writeText(String(id || ''));
+                alert('ID copiado.');
+            } catch(e) {
+                const area = document.createElement('textarea');
+                area.value = String(id || '');
+                document.body.appendChild(area);
+                area.select();
+                document.execCommand('copy');
+                area.remove();
+                alert('ID copiado.');
+            }
+        };
+
+        window.salvarObsPresente = function(id, valor) {
+            let vt = [...veiculos];
+            let v = vt.find(x => x.id === id);
+            if(!v) return;
+            v.obsPresente = valor;
+            db.ref('veiculos').set(vt);
+        };
+
         window.salvarLetrasLiberadas = function() {
             const letras = document.getElementById('inputLetrasLiberadas').value
                 .split(',')
@@ -892,6 +931,7 @@
 
             db.ref('veiculos').set(vt);
             renderizarNoShow();
+            renderizarPresentes();
             alert('Configuração de NoShow salva.');
         };
 
@@ -1007,6 +1047,7 @@
         }
 
         function statusPresenca(v) {
+            if(v.noShowConfirmado) return { txt:'NOSHOW', cls:'chip-retido' };
             if(v.status === 'EM_ATENDIMENTO' || v.status === 'FINALIZADO') return { txt:'CHAMADO', cls:'chip-chamado' };
             if(v.status === 'AGUARDANDO' || v.status === 'FINAL_FILA') return { txt:'PRESENTE', cls:'chip-presente' };
             if(v.status === 'ATRASADO_AUSENTE') return { txt:'AUSENTE', cls:'chip-ausente' };
@@ -1027,17 +1068,19 @@
             }
 
             if(!filtrados.length) {
-                t.innerHTML = `<tr><td colspan="4" align="center" style="color:#64748b;">NENHUMA GAIOLA ENCONTRADA PARA O FILTRO SELECIONADO.</td></tr>`;
+                t.innerHTML = `<tr><td colspan="5" align="center" style="color:#64748b;">NENHUMA GAIOLA ENCONTRADA PARA O FILTRO SELECIONADO.</td></tr>`;
                 return;
             }
 
             filtrados.forEach(v => {
                 const st = statusPresenca(v);
+                const nomeExibido = v.noShowConfirmado ? `${v.nome || '-'} • NOSHOW` : (v.nome || '-');
                 t.innerHTML += `<tr>
                     <td>${v.gaiola || '-'}</td>
-                    <td>${v.nome || '-'}</td>
-                    <td>${v.id || '-'}</td>
+                    <td>${nomeExibido}</td>
+                    <td>${v.id || '-'}<button type="button" class="btn-copy-id" onclick="copiarId('${v.id || ''}')">COPIAR</button></td>
                     <td><span class="status-chip ${st.cls}">${st.txt}</span></td>
+                    <td><input type="text" class="obs-input" value="${(v.obsPresente || '').replace(/"/g, '&quot;')}" placeholder="OBS" onblur="salvarObsPresente('${v.id}', this.value)"></td>
                 </tr>`;
             });
         }
@@ -1108,6 +1151,13 @@
                 if(!!b.prioridadeNoShow !== !!a.prioridadeNoShow) return (b.prioridadeNoShow ? 1 : 0) - (a.prioridadeNoShow ? 1 : 0);
                 return (a.chegada || 0) - (b.chegada || 0);
             });
+
+            if(elTotalAguardando) elTotalAguardando.innerText = aguardando.filter(v => v.status === 'AGUARDANDO').length;
+
+            const buscaGaiola = String(document.getElementById('buscaGaiolaFila')?.value || '').trim().toUpperCase();
+            if(buscaGaiola) {
+                aguardando = aguardando.filter(v => String(v.gaiola || '').toUpperCase().includes(buscaGaiola));
+            }
 
             let totalTempoMs = 0;
             let qtdFinalizados = 0;
