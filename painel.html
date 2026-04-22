@@ -456,7 +456,7 @@
             const abaNoShow = document.getElementById('abaNoShow');
             if(abaNoShow) abaNoShow.style.display = 'none';
             const abaHistorico = document.getElementById('abaHistorico');
-            if(abaHistorico) abaHistorico.style.display = 'flex';
+            if(abaHistorico) abaHistorico.style.display = '';
             const abaFinalFila = document.getElementById('abaFinalFila');
             if(abaFinalFila) abaFinalFila.style.display = 'none';
             
@@ -485,7 +485,16 @@
             });
         }
 
-        db.ref('veiculos').on('value', s => { veiculos = s.val() || []; renderizarTelas(); renderizarNoShow(); });
+        db.ref('veiculos').on('value', s => {
+            veiculos = s.val() || [];
+            renderizarTelas();
+            renderizarNoShow();
+            const elAtivo = document.activeElement;
+            const editandoObs = !!(elAtivo && elAtivo.classList && elAtivo.classList.contains('obs-input'));
+            if(!editandoObs) {
+                renderizarPresentes();
+            }
+        });
         db.ref('regrasFinalFila').on('value', s => { regrasFinalFila = s.val() || []; renderizarTelas(); });
         db.ref('mesasOcupadas').on('value', s => { listaMesas = s.val() || []; renderizarControleMesas(); });
         db.ref('historicoChamadas').on('value', s => { historicoChamadas = s.val() || []; renderizarHistoricoChamadas(); });
@@ -966,6 +975,7 @@
 
             db.ref('veiculos').set(vt);
             renderizarNoShow();
+            renderizarPresentes();
             alert('Configuração de NoShow salva.');
         };
 
