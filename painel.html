@@ -403,6 +403,7 @@
 
         let veiculos = [], regrasFinalFila = [], listaMesas = [], historicoChamadas = [], letrasLiberadas = [], auditoriaRegistros = [];
         let audioFila = [], estaFalando = false, uDataChamada = 0, audioTVAtivo = false;
+        let obsSaveTimers = {};
 
         if (!uAtu) window.location.href = "index.html";
         document.getElementById('dispUser').innerText = uAtu;
@@ -443,7 +444,7 @@
             if(bC) bC.click();
         } else {
             document.body.classList.add('is-mesa-operacao');
-            [bM, bAud].forEach(b => { if(b) b.style.display = 'flex'; });
+            [bM, bAud, bH].forEach(b => { if(b) b.style.display = 'flex'; });
             if(bF) bF.style.display = 'none';
             if(bP) bP.style.display = 'none';
             if(bN) bN.style.display = 'none';
@@ -455,7 +456,7 @@
             const abaNoShow = document.getElementById('abaNoShow');
             if(abaNoShow) abaNoShow.style.display = 'none';
             const abaHistorico = document.getElementById('abaHistorico');
-            if(abaHistorico) abaHistorico.style.display = 'none';
+            if(abaHistorico) abaHistorico.style.display = 'flex';
             const abaFinalFila = document.getElementById('abaFinalFila');
             if(abaFinalFila) abaFinalFila.style.display = 'none';
             
@@ -889,6 +890,17 @@
             }
         };
 
+        window.salvarObsPresenteInput = function(id, valor) {
+            clearTimeout(obsSaveTimers[id]);
+            obsSaveTimers[id] = setTimeout(() => {
+                let vt = [...veiculos];
+                let v = vt.find(x => x.id === id);
+                if(!v) return;
+                v.obsPresente = valor;
+                db.ref('veiculos').set(vt);
+            }, 400);
+        };
+
         window.salvarObsPresente = function(id, valor) {
             let vt = [...veiculos];
             let v = vt.find(x => x.id === id);
@@ -1134,7 +1146,7 @@
                     <td>${nomeExibido}</td>
                     <td>${v.id || '-'}<button type="button" class="btn-copy-id" onclick="copiarId('${v.id || ''}')">COPIAR</button></td>
                     <td><span class="status-chip ${st.cls}">${st.txt}</span></td>
-                    <td><input type="text" class="obs-input" value="${String(v.obsPresente || '').replace(/"/g, '&quot;')}" placeholder="OBS" onblur="salvarObsPresente('${v.id}', this.value)"></td>
+                    <td><input type="text" class="obs-input" value="${String(v.obsPresente || '').replace(/"/g, '&quot;')}" placeholder="OBS" oninput="salvarObsPresenteInput('${v.id}', this.value)"></td>
                 </tr>`;
             });
         }
@@ -1311,7 +1323,6 @@
                 lAtendTV.innerHTML = hAtend || '<center style="color:#4a5568; margin-top:20px;">NENHUM CHAMADO</center>';
             }
 
-            renderizarPresentes();
             renderizarHistoricoChamadas();
             renderizarAuditoria();
         }
