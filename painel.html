@@ -1069,8 +1069,11 @@
             t.innerHTML = '';
 
             const filtroStatus = (document.getElementById('filtroStatusPresentes')?.value || 'TODOS').toUpperCase();
-            let filtrados = veiculos.filter(v => letrasLiberadas.includes(extrairLetra(v.gaiola)))
-                .sort((a,b) => a.gaiola.localeCompare(b.gaiola));
+
+            let filtrados = veiculos.filter(v => {
+                const letraLiberada = letrasLiberadas.includes(extrairLetra(v.gaiola));
+                return letraLiberada || !!v.noShowConfirmado;
+            }).sort((a,b) => (a.gaiola || '').localeCompare(b.gaiola || ''));
 
             if(filtroStatus !== 'TODOS') {
                 filtrados = filtrados.filter(v => statusPresenca(v).txt === filtroStatus);
