@@ -222,7 +222,7 @@
                 <p style="color:#94a3b8; font-size:12px; margin-top:5px;">Gerencie e libere mesas que ficaram presas no servidor.</p>
                 <div style="display: flex; gap: 20px; margin-top: 15px; height: 100%;">
                     <div style="flex: 1; background: #0b132b; border: 1px solid #1e293b; border-radius: 8px; padding: 20px; display: flex; flex-direction: column;">
-                        <h3 style="color: #cbd5e1; border-bottom: 1px dashed #334155; padding-bottom: 10px;">🖥️ MESAS OCUPADAS ATUALMENTE</h3>
+                        <h3 style="color: #cbd5e1; border-bottom: 1px dashed #334155; padding-bottom: 10px;">🖥️ MESAS OCUPADAS ATUALMENTE (<span id="countMesasOcupadas">0</span>)</h3>
                         <div class="table-wrapper" style="margin-top: 10px;">
                             <table>
                                 <thead><tr><th>NOME DA MESA</th><th align="right">AÇÃO</th></tr></thead>
@@ -268,7 +268,7 @@
                         </div>
                     </div>
                     <div class="card-analise">
-                        <h3 style="color: #10b981;">🟢 EM ANÁLISE</h3>
+                        <h3 style="color: #10b981;">🟢 EM ATENDIMENTO</h3>
                         <div class="table-wrapper"><table><thead><tr><th>GAIOLA</th><th>TEMPO</th><th align="right" id="thAcaoAnalise">AÇÃO</th></tr></thead><tbody id="tabelaMinhaMesa"></tbody></table></div>
                     </div>
                 </div>
@@ -295,13 +295,18 @@
             </div>
 
             <div id="abaRadar" class="aba">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap:20px; flex-wrap:wrap;">
                     <h2 style="margin: 0;">RADAR GLOBAL (TEMPO REAL)</h2>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:flex-end;">
+                        <div style="background: #1e293b; border: 1px solid #334155; padding: 10px 16px; border-radius: 8px; text-align: center; min-width:120px;"><div style="font-size:11px; color:#94a3b8; font-weight:bold;">AGUARDANDO</div><div id="countAguardandoRadar" style="font-size:26px; font-weight:bold; color:#38bdf8;">0</div></div>
+                        <div style="background: #1e293b; border: 1px solid #334155; padding: 10px 16px; border-radius: 8px; text-align: center; min-width:120px;"><div style="font-size:11px; color:#94a3b8; font-weight:bold;">EM_ATENDIMENTO</div><div id="countAtendimentoRadar" style="font-size:26px; font-weight:bold; color:#10b981;">0</div></div>
+                        <div style="background: #1e293b; border: 1px solid #334155; padding: 10px 16px; border-radius: 8px; text-align: center; min-width:120px;"><div style="font-size:11px; color:#94a3b8; font-weight:bold;">ATRASO/AUSENTE</div><div id="countAtrasoRadar" style="font-size:26px; font-weight:bold; color:#f59e0b;">0</div></div>
+                        <div style="background: #1e293b; border: 1px solid #334155; padding: 10px 16px; border-radius: 8px; text-align: center; min-width:120px;"><div style="font-size:11px; color:#94a3b8; font-weight:bold;">FINALIZADO</div><div id="countFinalizadoRadar" style="font-size:26px; font-weight:bold; color:#cbd5e1;">0</div></div>
                     <div style="background: #1e293b; border: 1px solid #334155; padding: 10px 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
                         <div style="font-size: 11px; color: #94a3b8; font-weight: bold; letter-spacing: 1px; margin-bottom: 5px;">TEMPO MÉD. ATENDIMENTO</div>
                         <div id="displayTempoMedio" style="font-size: 22px; font-weight: bold; color: #38bdf8; text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);">00m 00s</div>
                     </div>
-                </div>
+                </div></div>
                 <div class="table-wrapper"><table><thead><tr><th>GAIOLA / MOTORISTA</th><th>MESA</th><th>STATUS</th><th>DURAÇÃO</th></tr></thead><tbody id="tabelaDashboard"></tbody></table></div>
             </div>
 
@@ -327,8 +332,9 @@
                         <option value="CHAMADO">CHAMADO</option>
                         <option value="PRESENTE">PRESENTE</option>
                         <option value="AUSENTE">AUSENTE</option>
+                        <option value="NOSHOW">NOSHOW</option>
                     </select>
-                    <div></div>
+                    <input type="text" id="buscaPresentes" placeholder="BUSCAR POR ID OU MOTORISTA..." oninput="renderizarPresentes()">
                 </div>
                 <div class="table-wrapper">
                     <table>
@@ -342,6 +348,9 @@
             <div id="abaNoShow" class="aba">
                 <h2 style="color:#f59e0b;">🚫 NOSHOW</h2>
                 <p style="color:#94a3b8; font-size:14px; margin-bottom: 10px;">Lista apenas os motoristas ausentes. Marque <b>NoShow</b> quando não virá, <b>Rota Repassada</b> quando já encontrou substituto, e informe o <b>ID do novo motorista</b> para dar prioridade automática no check-in.</p>
+                <div style="display:grid; grid-template-columns: 1fr; gap:15px; margin-bottom:15px;">
+                    <input type="text" id="buscaNoShow" placeholder="BUSCAR NO NOSHOW POR ID OU MOTORISTA..." oninput="renderizarNoShow()">
+                </div>
                 <div class="table-wrapper">
                     <table>
                         <thead><tr><th>GAIOLA</th><th>MOTORISTA</th><th>ID</th><th>NOSHOW</th><th>ROTA REPASSADA</th><th>ID NOVO MOTORISTA</th><th>AÇÃO</th></tr></thead>
@@ -360,14 +369,14 @@
             <div id="abaHistorico" class="aba">
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:15px;">
                     <h2 style="color:#38bdf8; margin:0;">🕘 HISTÓRICO DE CHAMADAS DO DIA</h2>
-                    <button type="button" class="btn-padrao btn-acao" onclick="exportarHistoricoDia()">EXPORTAR RELATÓRIO DO DIA</button>
+                    <button type="button" class="btn-padrao btn-acao" id="btnExportarHistorico" onclick="exportarHistoricoDia()">EXPORTAR RELATÓRIO DO DIA</button>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr; gap:15px; margin-bottom:15px;">
-                    <input type="text" id="buscaHistoricoMotorista" placeholder="BUSCAR MOTORISTA NO HISTÓRICO..." oninput="renderizarHistoricoChamadas()">
+                    <input type="text" id="buscaHistoricoMotorista" placeholder="BUSCAR MOTORISTA OU GAIOLA NO HISTÓRICO..." oninput="renderizarHistoricoChamadas()">
                 </div>
                 <div class="table-wrapper">
                     <table>
-                        <thead><tr><th>HORÁRIO CHAMADA</th><th>HORÁRIO CHEGADA</th><th>TEMPO ESPERA</th><th>GAIOLA</th><th>MOTORISTA</th><th>ID</th><th>MESA</th></tr></thead>
+                        <thead><tr><th>HORÁRIO CHAMADA</th><th>HORÁRIO CHEGADA</th><th>TEMPO ESPERA</th><th>GAIOLA</th><th>MOTORISTA</th><th>ID</th><th>MESA</th><th>CHAMADA S/N</th></tr></thead>
                         <tbody id="tabelaHistoricoChamadas"></tbody>
                     </table>
                 </div>
@@ -413,6 +422,8 @@
             if(inputFinalFilaAdmin) inputFinalFilaAdmin.placeholder = 'DIGITAR GAIOLA OU LETRA...';
 
             [bA, bC, bT, bM, bR, bF, bAud, bCtrl, bP, bN, bH].forEach(b => { if(b) b.style.display = 'flex'; });
+            const btnExportarHistorico = document.getElementById('btnExportarHistorico');
+            if(btnExportarHistorico) btnExportarHistorico.style.display = 'inline-block';
             if(bA) bA.click();
         } else if(roleAtu === 'painel' || lAtu === 'Painel') {
             [bC, bT].forEach(b => { if(b) b.style.display = 'flex'; });
@@ -427,6 +438,8 @@
             const abaPresentes = document.getElementById('abaPresentes'); if(abaPresentes) abaPresentes.remove();
             const abaNoShow = document.getElementById('abaNoShow'); if(abaNoShow) abaNoShow.remove();
             const abaHistorico = document.getElementById('abaHistorico'); if(abaHistorico) abaHistorico.remove();
+            const btnExportarHistorico = document.getElementById('btnExportarHistorico');
+            if(btnExportarHistorico) btnExportarHistorico.style.display = 'none';
             if(bC) bC.click();
         } else {
             document.body.classList.add('is-mesa-operacao');
@@ -434,7 +447,7 @@
             if(bF) bF.style.display = 'none';
             if(bP) bP.style.display = 'none';
             if(bN) bN.style.display = 'none';
-            if(bH) bH.style.display = 'none';
+            
             const controlesPresentesAdmin = document.getElementById('controlesPresentesAdmin');
             if(controlesPresentesAdmin) controlesPresentesAdmin.style.display = 'none';
             const abaPresentes = document.getElementById('abaPresentes');
@@ -703,6 +716,8 @@
 
         function renderizarControleMesas() {
             const tM = document.getElementById('tabelaMesasAdmin');
+            const countEl = document.getElementById('countMesasOcupadas');
+            if(countEl) countEl.innerText = listaMesas.length;
             if(!tM) return;
             tM.innerHTML = '';
             if(listaMesas.length === 0) {
@@ -798,7 +813,8 @@
                 data: agora,
                 chegada: v.chegada || null,
                 tempoEsperaMs: v.chegada ? (agora - v.chegada) : null,
-                noShowRepassado: !!v.noShowRepassado
+                noShowRepassado: !!v.noShowRepassado,
+                segundaChamada: !!v.segundaChamadaRealizada
             });
             db.ref('historicoChamadas').set(h.slice(0, 500));
         }
@@ -834,7 +850,8 @@
                 v.horaChamada = Date.now();
                 v.ausenteLiberacao = false;
                 db.ref('veiculos').set(vt);
-                db.ref('tvComando').set({ id: v.id, gaiola: v.gaiola, nome: v.nome, mesa: lAtu, data: Date.now(), noShowRepassado: !!v.noShowRepassado });
+                db.ref('tvComando').set({ id: v.id, gaiola: v.gaiola, nome: v.nome, mesa: lAtu, data: Date.now(), noShowRepassado: !!v.noShowRepassado,
+                segundaChamada: !!v.segundaChamadaRealizada });
                 salvarHistoricoChamada(v);
             }
         };
@@ -862,7 +879,6 @@
         window.copiarId = async function(id) {
             try {
                 await navigator.clipboard.writeText(String(id || ''));
-                alert('ID copiado.');
             } catch(e) {
                 const area = document.createElement('textarea');
                 area.value = String(id || '');
@@ -870,7 +886,6 @@
                 area.select();
                 document.execCommand('copy');
                 area.remove();
-                alert('ID copiado.');
             }
         };
 
@@ -947,9 +962,17 @@
             if(!t) return;
             t.innerHTML = '';
 
-            const listaNoShow = veiculos
+            const busca = String(document.getElementById('buscaNoShow')?.value || '').trim().toUpperCase();
+            let listaNoShow = veiculos
                 .filter(v => statusPresenca(v).txt === 'AUSENTE' || !!v.noShowConfirmado)
                 .sort((a,b) => (a.gaiola || '').localeCompare(b.gaiola || ''));
+
+            if(busca) {
+                listaNoShow = listaNoShow.filter(v =>
+                    String(v.id || '').toUpperCase().includes(busca) ||
+                    String(v.nome || '').toUpperCase().includes(busca)
+                );
+            }
 
             if(!listaNoShow.length) {
                 t.innerHTML = `<tr><td colspan="7" align="center" style="color:#64748b;">NENHUM MOTORISTA AUSENTE.</td></tr>`;
@@ -992,9 +1015,13 @@
         }
 
         window.segundaChamada = function(id) {
-            const v = veiculos.find(x => x.id === id);
+            let vt = [...veiculos];
+            const v = vt.find(x => x.id === id);
             if(!v) return;
-            db.ref('tvComando').set({ id: v.id, gaiola: v.gaiola, nome: v.nome, mesa: lAtu, data: Date.now(), segundaChamada: true, noShowRepassado: !!v.noShowRepassado });
+            v.segundaChamadaRealizada = true;
+            db.ref('veiculos').set(vt);
+            db.ref('tvComando').set({ id: v.id, gaiola: v.gaiola, nome: v.nome, mesa: lAtu, data: Date.now(), segundaChamada: true, noShowRepassado: !!v.noShowRepassado,
+                segundaChamada: !!v.segundaChamadaRealizada });
         };
 
         window.limparDados = function() {
@@ -1035,11 +1062,14 @@
             const busca = String(document.getElementById('buscaHistoricoMotorista')?.value || '').trim().toUpperCase();
             let lista = [...historicoChamadas];
             if(busca) {
-                lista = lista.filter(h => String(h.nome || '').toUpperCase().includes(busca));
+                lista = lista.filter(h =>
+                    String(h.nome || '').toUpperCase().includes(busca) ||
+                    String(h.gaiola || '').toUpperCase().includes(busca)
+                );
             }
 
             if(!lista.length) {
-                t.innerHTML = `<tr><td colspan="7" align="center" style="color:#64748b;">SEM REGISTROS PARA A BUSCA INFORMADA.</td></tr>`;
+                t.innerHTML = `<tr><td colspan="8" align="center" style="color:#64748b;">SEM REGISTROS PARA A BUSCA INFORMADA.</td></tr>`;
                 return;
             }
             lista.forEach(h => {
@@ -1051,6 +1081,7 @@
                     <td>${h.nome || '-'}${h.evento === 'NOSHOW' ? ' <span class="tag-noshow">• NOSHOW</span>' : ''}</td>
                     <td>${h.id || '-'}</td>
                     <td>${h.mesa || '-'}</td>
+                    <td>${h.segundaChamada ? 'S' : 'N'}</td>
                 </tr>`;
             });
         }
@@ -1069,6 +1100,7 @@
             t.innerHTML = '';
 
             const filtroStatus = (document.getElementById('filtroStatusPresentes')?.value || 'TODOS').toUpperCase();
+            const busca = String(document.getElementById('buscaPresentes')?.value || '').trim().toUpperCase();
 
             let filtrados = veiculos.filter(v => {
                 const letraLiberada = letrasLiberadas.includes(extrairLetra(v.gaiola));
@@ -1077,6 +1109,13 @@
 
             if(filtroStatus !== 'TODOS') {
                 filtrados = filtrados.filter(v => statusPresenca(v).txt === filtroStatus);
+            }
+
+            if(busca) {
+                filtrados = filtrados.filter(v =>
+                    String(v.id || '').toUpperCase().includes(busca) ||
+                    String(v.nome || '').toUpperCase().includes(busca)
+                );
             }
 
             if(!filtrados.length) {
@@ -1156,6 +1195,10 @@
             const lAtendTV = document.getElementById('tvEmAtendimentoLista');
             const elTempoMedio = document.getElementById('displayTempoMedio');
             const elTotalAguardando = document.getElementById('totalAguardandoFila');
+            const countAguardandoRadar = document.getElementById('countAguardandoRadar');
+            const countAtendimentoRadar = document.getElementById('countAtendimentoRadar');
+            const countAtrasoRadar = document.getElementById('countAtrasoRadar');
+            const countFinalizadoRadar = document.getElementById('countFinalizadoRadar');
 
             [tD, tA, tM, tF].forEach(t => { if(t) t.innerHTML = ''; });
             let ag = Date.now();
@@ -1178,6 +1221,11 @@
             if(buscaGaiola) {
                 aguardando = aguardando.filter(v => String(v.gaiola || '').toUpperCase().includes(buscaGaiola));
             }
+
+            if(countAguardandoRadar) countAguardandoRadar.innerText = veiculos.filter(v => v.status === 'AGUARDANDO').length;
+            if(countAtendimentoRadar) countAtendimentoRadar.innerText = veiculos.filter(v => v.status === 'EM_ATENDIMENTO').length;
+            if(countAtrasoRadar) countAtrasoRadar.innerText = veiculos.filter(v => v.status === 'ATRASADO_AUSENTE').length;
+            if(countFinalizadoRadar) countFinalizadoRadar.innerText = veiculos.filter(v => v.status === 'FINALIZADO').length;
 
             let totalTempoMs = 0;
             let qtdFinalizados = 0;
@@ -1256,7 +1304,7 @@
                     const nomePainel = v.noShowRepassado ? 'NOSHOW' : (v.nome || '-');
                     hAtend += `<div class="hist-item-tv atend">
                                   <span class="hist-rota-tv" style="color:#10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">${v.gaiola || '-'}</span>
-                                  <span class="hist-nome-tv" style="font-size:11px;">${nomePainel}</span>
+                                  <span class="hist-nome-tv" style="font-size:22px;">${nomePainel}</span>
                                   <span style="color:#10b981; font-size:55px; font-weight:bold; display:block; margin-top:5px; letter-spacing:1px; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">${(v.mesa || '').toUpperCase()}</span>
                                </div>`;
                 });
@@ -1337,7 +1385,7 @@
 
         window.exportarHistoricoDia = function() {
             if(!historicoChamadas.length) return alert("Não há histórico para exportar.");
-            const linhas = [["HORARIO_CHAMADA","HORARIO_CHEGADA","TEMPO_ESPERA","GAIOLA","MOTORISTA","ID","MESA","EVENTO"]];
+            const linhas = [["HORARIO_CHAMADA","HORARIO_CHEGADA","TEMPO_ESPERA","GAIOLA","MOTORISTA","ID","MESA","EVENTO","CHAMADA_SN"]];
             historicoChamadas.forEach(h => {
                 linhas.push([
                     h.data ? new Date(h.data).toLocaleTimeString() : '',
@@ -1347,7 +1395,8 @@
                     h.nome || '',
                     h.id || '',
                     h.mesa || '',
-                    h.evento || 'CHAMADA'
+                    h.evento || 'CHAMADA',
+                    h.segundaChamada ? 'S' : 'N'
                 ]);
             });
             const csv = linhas.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
